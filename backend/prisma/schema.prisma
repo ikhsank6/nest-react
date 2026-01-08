@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  uuid      String    @unique @default(uuid())
+  email     String    @unique
+  password  String
+  name      String
+  roleId    Int
+  role      Role      @relation(fields: [roleId], references: [id])
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("users")
+}
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  uuid        String       @unique @default(uuid())
+  name        String       @unique
+  description String?
+  users       User[]
+  menuAccess  MenuAccess[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  @@map("roles")
+}
+
+model Menu {
+  id         Int          @id @default(autoincrement())
+  uuid       String       @unique @default(uuid())
+  name       String
+  path       String?
+  icon       String?
+  parentId   Int?
+  parent     Menu?        @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children   Menu[]       @relation("MenuHierarchy")
+  order      Int          @default(0)
+  isActive   Boolean      @default(true)
+  menuAccess MenuAccess[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  deletedAt  DateTime?
+
+  @@map("menus")
+}
+
+model MenuAccess {
+  id        Int       @id @default(autoincrement())
+  uuid      String    @unique @default(uuid())
+  roleId    Int
+  menuId    Int
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu      Menu      @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  canView   Boolean   @default(true)
+  canCreate Boolean   @default(false)
+  canEdit   Boolean   @default(false)
+  canDelete Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([roleId, menuId])
+  @@map("menu_access")
+}
+
