@@ -19,6 +19,7 @@ import {
   Edit2,
   Trash2,
   Eye,
+  RefreshCw,
 } from "lucide-react"
 import {
   Select,
@@ -59,9 +60,12 @@ interface DataTableProps<T> {
   searchPlaceholder?: string
   onSearch?: (value: string) => void
   searchValue?: string
+  onRefresh?: () => void
   // Messages
   emptyMessage?: string
   loadingMessage?: string
+  isError?: boolean
+  errorMessage?: string
   // Pagination
   keyExtractor: (item: T) => string
   showPagination?: boolean
@@ -85,8 +89,11 @@ export function DataTable<T>({
   searchPlaceholder = "Search...",
   onSearch,
   searchValue = "",
+  onRefresh,
   emptyMessage = "No data found.",
   loadingMessage = "Loading...",
+  isError = false,
+  errorMessage = "Gagal memuat data.",
   keyExtractor,
   showPagination = true,
   currentPage = 1,
@@ -109,12 +116,12 @@ export function DataTable<T>({
   }
 
   return (
-    <div className={cn("rounded-lg border bg-card shadow-sm", className)}>
+    <div className={cn("rounded-lg border bg-card shadow-sm overflow-hidden", className)}>
       {/* Header with Title and Action Button */}
       {(title || headerAction) && (
-        <div className="flex items-center justify-between border-b px-6 py-4">
+        <div className="flex items-center justify-between border-b bg-muted/50 px-6 py-4">
           <div>
-            {title && <h2 className="text-xl font-semibold">{title}</h2>}
+            {title && <h2 className="text-xl font-bold tracking-tight text-foreground">{title}</h2>}
             {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
           {headerAction}
@@ -122,26 +129,26 @@ export function DataTable<T>({
       )}
 
       {/* Search Bar and Controls */}
-      <div className="flex items-center justify-between gap-4 border-b px-6 py-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b px-6 py-4">
         {onSearch && (
-          <div className="relative flex-1 max-w-md">
+          <div className="relative w-full sm:flex-1 sm:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => onSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-background/50 focus-visible:ring-1"
             />
           </div>
         )}
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
           {/* View Toggle */}
-          <div className="flex items-center rounded-md border">
+          <div className="flex items-center rounded-md border p-1 bg-muted/30">
             <Button 
               variant={viewMode === 'table' ? 'secondary' : 'ghost'} 
               size="icon" 
-              className="h-9 w-9 rounded-r-none"
+              className={cn("h-8 w-8 rounded-sm", viewMode === 'table' && "shadow-sm")}
               onClick={() => setViewMode('table')}
             >
               <LayoutList className="h-4 w-4" />
@@ -149,7 +156,7 @@ export function DataTable<T>({
             <Button 
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
               size="icon" 
-              className="h-9 w-9 rounded-l-none"
+              className={cn("h-8 w-8 rounded-sm", viewMode === 'grid' && "shadow-sm")}
               onClick={() => setViewMode('grid')}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -158,158 +165,264 @@ export function DataTable<T>({
 
           {/* Items per page */}
           {onItemsPerPageChange && (
-            <Select 
-              value={String(itemsPerPage)} 
-              onValueChange={(val) => onItemsPerPageChange(parseInt(val))}
-            >
-              <SelectTrigger className="w-[80px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select 
+                value={String(itemsPerPage)} 
+                onValueChange={(val) => onItemsPerPageChange(parseInt(val))}
+              >
+                <SelectTrigger className="h-9 w-[70px] bg-background/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Table */}
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            {columns.map((column) => (
-              <TableHead 
-                key={column.key} 
-                className={cn("text-xs uppercase tracking-wider text-muted-foreground font-semibold", column.headerClassName)}
-              >
-                {column.header}
-              </TableHead>
-            ))}
-            {actions && (
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground font-semibold text-right w-[100px]">
-                Actions
-              </TableHead>
-            )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            <TableRow>
-              <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="h-32 text-center">
-                <div className="flex justify-center items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">{loadingMessage}</span>
-                </div>
-              </TableCell>
-            </TableRow>
-          ) : data.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="h-32 text-center text-muted-foreground">
-                {emptyMessage}
-              </TableCell>
-            </TableRow>
-          ) : (
-            data.map((item) => (
-              <TableRow key={keyExtractor(item)}>
+      {/* Content Rendering */}
+      {viewMode === 'table' ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent bg-muted/20">
                 {columns.map((column) => (
-                  <TableCell key={column.key} className={column.className}>
-                    {column.cell(item)}
-                  </TableCell>
+                  <TableHead 
+                    key={column.key} 
+                    className={cn("text-xs uppercase tracking-wider text-muted-foreground font-bold px-6 py-4", column.headerClassName)}
+                  >
+                    {column.header}
+                  </TableHead>
                 ))}
                 {actions && (
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {actions.onView && (
+                  <TableHead className="text-xs uppercase tracking-wider text-muted-foreground font-bold text-right w-[100px] px-6">
+                    Actions
+                  </TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="h-32 text-center">
+                    <div className="flex justify-center items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <span className="text-muted-foreground">{loadingMessage}</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="h-48 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <span>{isError ? errorMessage : emptyMessage}</span>
+                      {isError && onRefresh && (
                         <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          onClick={() => actions.onView?.(item)}
+                          variant="outline" 
+                          size="sm" 
+                          onClick={onRefresh}
+                          className="h-8 gap-2 bg-background shadow-xs hover:bg-muted"
                         >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {actions.onEdit && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-muted-foreground hover:text-primary"
-                          onClick={() => actions.onEdit?.(item)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {actions.onDelete && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => actions.onDelete?.(item)}
-                        >
-                          <Trash2 className="h-4 w-4" />
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          Reload Data
                         </Button>
                       )}
                     </div>
                   </TableCell>
-                )}
-              </TableRow>
-            ))
+                </TableRow>
+              ) : (
+                data.map((item) => (
+                  <TableRow key={keyExtractor(item)} className="group hover:bg-muted/30">
+                    {columns.map((column) => (
+                      <TableCell key={column.key} className={cn("px-6 py-4", column.className)}>
+                        {column.cell(item)}
+                      </TableCell>
+                    ))}
+                    {actions && (
+                      <TableCell className="text-right px-6 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                          {actions.onView && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background shadow-none"
+                              onClick={() => actions.onView?.(item)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {actions.onEdit && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-background shadow-none"
+                              onClick={() => actions.onEdit?.(item)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {actions.onDelete && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-background shadow-none"
+                              onClick={() => actions.onDelete?.(item)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        /* Grid View */
+        <div className="p-6 bg-muted/10">
+          {loading ? (
+            <div className="flex justify-center items-center h-48 gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="text-muted-foreground font-medium">{loadingMessage}</span>
+            </div>
+          ) : data.length === 0 ? (
+            <div className="flex flex-col justify-center items-center h-48 text-muted-foreground bg-background rounded-lg border border-dashed gap-3">
+              <span>{isError ? errorMessage : emptyMessage}</span>
+              {isError && onRefresh && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onRefresh}
+                  className="gap-2"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Reload Data
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {data.map((item) => (
+                <div 
+                  key={keyExtractor(item)} 
+                  className="group relative rounded-xl border bg-background p-5 hover:shadow-lg hover:border-primary/20 transition-all duration-300"
+                >
+                  <div className="flex flex-col gap-4">
+                    {/* Render standard columns in a vertical stack or specific layout */}
+                    {columns.map((column, idx) => (
+                      <div key={column.key} className={idx === 0 ? "mb-1" : ""}>
+                         {idx > 0 && <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/70 block mb-1">{column.header}</span>}
+                         <div className={cn(idx === 0 ? "text-lg font-bold text-foreground" : "text-sm text-foreground/90", column.className)}>
+                           {column.cell(item)}
+                         </div>
+                      </div>
+                    ))}
+                    
+                    {/* Actions in Grid */}
+                    {actions && (
+                      <div className="flex items-center justify-end gap-2 mt-2 pt-4 border-t border-muted">
+                        {actions.onView && (
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 rounded-full"
+                            onClick={() => actions.onView?.(item)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {actions.onEdit && (
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 rounded-full hover:text-primary hover:bg-primary/10"
+                            onClick={() => actions.onEdit?.(item)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {actions.onDelete && (
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 rounded-full hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => actions.onDelete?.(item)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-        </TableBody>
-      </Table>
+        </div>
+      )}
 
       {/* Pagination */}
       {showPagination && (
-        <div className="flex items-center justify-between border-t px-6 py-4 text-sm text-muted-foreground">
-          <div>
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t bg-muted/50 px-6 py-4 gap-4 text-sm text-muted-foreground">
+          <div className="order-2 sm:order-1">
             {totalItems !== undefined ? (
-              <>
-                Showing <span className="font-medium text-primary">{Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}</span> to{" "}
-                <span className="font-medium text-primary">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{" "}
-                <span className="font-medium text-primary">{totalItems}</span> results
-              </>
+              <p>
+                Showing <span className="font-semibold text-foreground">{Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}</span> to{" "}
+                <span className="font-semibold text-foreground">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{" "}
+                <span className="font-semibold text-foreground">{totalItems}</span> results
+              </p>
             ) : (
-              `Showing ${data.length} items`
+              <p>Showing <span className="font-semibold text-foreground">{data.length}</span> items</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="h-8 w-8" 
-              disabled={currentPage <= 1}
-              onClick={() => onPageChange?.(currentPage - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="default"
-              size="sm"
-              className="h-8 min-w-[32px]"
-            >
-              {currentPage}
-            </Button>
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="h-8 w-8" 
-              disabled={currentPage >= totalPages}
-              onClick={() => onPageChange?.(currentPage + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-3 order-1 sm:order-2">
+            <div className="flex items-center gap-1.5">
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="h-8 w-8 bg-background shadow-none" 
+                disabled={currentPage <= 1 || loading}
+                onClick={() => onPageChange?.(currentPage - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="flex items-center justify-center min-w-[32px] h-8 px-2 bg-primary text-primary-foreground font-bold rounded-md text-xs shadow-sm shadow-primary/20">
+                {currentPage}
+              </div>
+              
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="h-8 w-8 bg-background shadow-none" 
+                disabled={currentPage >= totalPages || loading}
+                onClick={() => onPageChange?.(currentPage + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
             
-            <span className="ml-2">Go to</span>
-            <Input
-              className="h-8 w-14 text-center"
-              value={goToPage}
-              onChange={(e) => setGoToPage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleGoToPage()}
-            />
-            <span>of {totalPages}</span>
+            <div className="h-8 w-px bg-border mx-1" />
+            
+            <div className="flex items-center gap-2">
+              <span className="text-xs whitespace-nowrap">Go to</span>
+              <Input
+                className="h-8 w-12 px-1 text-center bg-background focus-visible:ring-1"
+                value={goToPage}
+                onChange={(e) => setGoToPage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGoToPage()}
+                disabled={loading}
+              />
+              <span className="text-xs whitespace-nowrap">of {totalPages}</span>
+            </div>
           </div>
         </div>
       )}

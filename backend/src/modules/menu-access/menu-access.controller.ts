@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseIntPipe, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseIntPipe, Request, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { MenuAccessService } from './menu-access.service';
 import { CreateMenuAccessDto, UpdateMenuAccessDto, BulkMenuAccessDto } from './dto/menu-access.dto';
@@ -26,6 +26,7 @@ export class MenuAccessController {
   }
 
   @Post()
+  @HttpCode(200)
   @UseGuards(RolesGuard)
   @Roles('Admin')
   async create(@Body() createMenuAccessDto: CreateMenuAccessDto) {

@@ -46,14 +46,10 @@ export interface PaginatedResponse<T> {
 }
 
 export const userService = {
-  getAll: async (page = 1, limit = 10): Promise<User[]> => {
-    const response = await api.get(`/users?page=${page}&limit=${limit}`) as any;
-    // Extract data array from response
-    return response?.data || [];
-  },
-
-  getAllWithMeta: async (page = 1, limit = 10): Promise<PaginatedResponse<User>> => {
-    const response = await api.get(`/users?page=${page}&limit=${limit}`) as any;
+  getAll: async (page = 1, limit = 10, search?: string): Promise<PaginatedResponse<User>> => {
+    let url = `/users?page=${page}&limit=${limit}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    const response = await api.get(url) as any;
     return response;
   },
 

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto } from './dto';
@@ -10,6 +10,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @HttpCode(200)
   @ApiOperation({ summary: 'User login', description: 'Login with email and password to get JWT token' })
   @ApiResponse({ 
     status: 200, 
@@ -36,6 +37,7 @@ export class AuthController {
   }
 
   @Post('register')
+  @HttpCode(200)
   @ApiOperation({ summary: 'User registration', description: 'Register a new user account (auto-assigned User role)' })
   @ApiResponse({ status: 201, description: 'Registration successful' })
   @ApiResponse({ status: 400, description: 'Email already exists or validation error' })
@@ -44,6 +46,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Forgot password', description: 'Request password reset email' })
   @ApiResponse({ status: 200, description: 'Password reset email sent (if email exists)' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
@@ -19,10 +19,12 @@ export class UsersController {
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('search') search?: string,
   ) {
     return this.usersService.findAll(
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 10,
+      search,
     );
   }
 
@@ -35,6 +37,7 @@ export class UsersController {
   }
 
   @Post()
+  @HttpCode(200)
   @Roles('Admin')
   @ApiOperation({ summary: 'Create new user' })
   async create(@Body() createUserDto: CreateUserDto) {

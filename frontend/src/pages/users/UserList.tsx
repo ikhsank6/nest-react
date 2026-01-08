@@ -1,49 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { userService, type User } from '@/services/user.service';
 import { roleService, type Role } from '@/services/role.service';
 import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
-import { FormSheet, ViewSheet, FieldDisplay } from '@/components/ui/form-sheet';
-import { DeleteDialog } from '@/components/ui/delete-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Plus, Eye, EyeOff } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { userFormSchema, type UserFormData } from '@/lib/validations';
+import { useTable } from '@/hooks/useTable';
+import { UserViewDrawer } from '@/components/users/UserViewDrawer';
+import { UserFormDrawer } from '@/components/users/UserFormDrawer';
+import { DeleteDialog } from '@/components/ui/delete-dialog';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
 export default function UserList() {
-  const [users, setUsers] = useState<User[]>([]);
+  // Use table state from store
+  const {
+    data: users,
+    loading,
+    error,
+    search,
+    page,
+    limit,
+    totalPages,
+    totalItems,
+    setPage,
+    setLimit,
+    setSearch,
+    refresh: fetchUsers,
+  } = useTable<User>('users', useCallback((p, l, s) => userService.getAll(p, l, s), []));
+  
+  // Roles state remains local as it's not part of the table store
   const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
   
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -62,20 +59,24 @@ export default function UserList() {
   });
 
   useEffect(() => {
-    fetchUsers();
     fetchRoles();
   }, []);
 
-  const fetchUsers = async () => {
-    try {
-      const users = await userService.getAll();
-      setUsers(users);
-    } catch (error) {
-      toast.error('Gagal mengambil data user');
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
+  const handleSearch = (val: string) => {
+    setSearch(val);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+  };
+
+  const handleRefresh = () => {
+    fetchUsers();
+    fetchRoles();
   };
 
   const fetchRoles = async () => {
@@ -98,7 +99,6 @@ export default function UserList() {
     setSelectedUser(null);
     setDrawerMode('create');
     setDrawerOpen(true);
-    setShowPassword(false);
   };
 
   const openEditDrawer = (user: User) => {
@@ -112,7 +112,6 @@ export default function UserList() {
     });
     setDrawerMode('edit');
     setDrawerOpen(true);
-    setShowPassword(false);
   };
 
   const openViewDrawer = (user: User) => {
@@ -178,11 +177,6 @@ export default function UserList() {
     setDeleteDialogOpen(true);
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(search.toLowerCase()) ||
-    user.email.toLowerCase().includes(search.toLowerCase())
-  );
-
   // Table columns
   const columns: Column<User>[] = [
     {
@@ -244,172 +238,44 @@ export default function UserList() {
             Tambah User
           </Button>
         }
-        data={filteredUsers}
+        data={users}
         columns={columns}
         actions={tableActions}
         loading={loading}
+        isError={error}
+        onRefresh={handleRefresh}
         searchPlaceholder="Search..."
         searchValue={search}
-        onSearch={setSearch}
+        onSearch={handleSearch}
         emptyMessage="No users found."
         keyExtractor={(user) => user.uuid}
-        totalItems={users.length}
-        totalPages={Math.ceil(users.length / 10)}
-        showPagination={filteredUsers.length > 0}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        onPageChange={handlePageChange}
+        itemsPerPage={limit}
+        onItemsPerPageChange={handleLimitChange}
+        showPagination={totalItems > 0}
       />
 
       {/* View Drawer */}
-      {drawerMode === 'view' && selectedUser && (
-        <ViewSheet
-          open={drawerOpen}
-          onOpenChange={setDrawerOpen}
-          title="Detail User"
-          description="Informasi detail user."
-          onEdit={() => { closeDrawer(); setTimeout(() => openEditDrawer(selectedUser), 100); }}
-        >
-          <FieldDisplay label="Nama" value={selectedUser.name} />
-          <FieldDisplay label="Email" value={selectedUser.email} />
-          <FieldDisplay label="Role" value={selectedUser.role?.name} />
-          <FieldDisplay 
-            label="Status" 
-            value={
-              <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${selectedUser.isActive ? 'bg-green-500' : 'bg-muted'}`} />
-                <span>{selectedUser.isActive ? 'Active' : 'Inactive'}</span>
-              </div>
-            } 
-          />
-          <FieldDisplay label="Dibuat Pada" value={new Date(selectedUser.createdAt).toLocaleString()} />
-          <FieldDisplay label="Terakhir Update" value={new Date(selectedUser.updatedAt).toLocaleString()} />
-        </ViewSheet>
-      )}
+      <UserViewDrawer
+        open={drawerOpen && drawerMode === 'view'}
+        onOpenChange={setDrawerOpen}
+        user={selectedUser}
+        onEdit={(user) => { closeDrawer(); setTimeout(() => openEditDrawer(user), 100); }}
+      />
 
       {/* Create/Edit Form Drawer */}
-      {(drawerMode === 'create' || drawerMode === 'edit') && (
-        <FormSheet
-          open={drawerOpen}
-          onOpenChange={setDrawerOpen}
-          title={drawerMode === 'create' ? 'Tambah User Baru' : 'Edit User'}
-          description={drawerMode === 'create' ? 'Isi form di bawah untuk membuat user baru.' : 'Ubah data user sesuai kebutuhan.'}
-          onSubmit={form.handleSubmit(handleSubmit)}
-          submitLabel={drawerMode === 'create' ? 'Simpan' : 'Update'}
-          loading={submitting}
-        >
-          <Form {...form}>
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nama <span className="text-destructive">*</span></FormLabel>
-                    <FormControl>
-                      <Input placeholder="Masukkan nama" {...field} disabled={submitting} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email <span className="text-destructive">*</span></FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Masukkan email" {...field} disabled={submitting} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Password {drawerMode === 'create' && <span className="text-destructive">*</span>}
-                    </FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          type={showPassword ? 'text' : 'password'} 
-                          placeholder={drawerMode === 'edit' ? '••••••••' : 'Masukkan password'} 
-                          {...field} 
-                          disabled={submitting} 
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    {drawerMode === 'edit' && (
-                      <FormDescription>Kosongkan jika tidak ingin mengubah password</FormDescription>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="roleUuid"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role <span className="text-destructive">*</span></FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={submitting}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {roles.map((role) => (
-                          <SelectItem key={role.uuid} value={role.uuid}>
-                            {role.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>Status Aktif</FormLabel>
-                      <FormDescription>
-                        User aktif dapat login ke sistem
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={submitting}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-          </Form>
-        </FormSheet>
-      )}
+      <UserFormDrawer
+        open={drawerOpen && (drawerMode === 'create' || drawerMode === 'edit')}
+        onOpenChange={setDrawerOpen}
+        mode={drawerMode === 'create' || drawerMode === 'edit' ? drawerMode : null}
+        form={form}
+        onSubmit={handleSubmit}
+        loading={submitting}
+        roles={roles}
+      />
 
       {/* Delete Confirmation Dialog */}
       <DeleteDialog

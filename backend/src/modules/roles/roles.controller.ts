@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseUUIDPipe, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
@@ -29,6 +29,7 @@ export class RolesController {
   }
 
   @Post()
+  @HttpCode(200)
   @Roles('Admin')
   @ApiOperation({ summary: 'Create new role' })
   async create(@Body() createRoleDto: CreateRoleDto) {

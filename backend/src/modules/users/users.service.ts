@@ -18,18 +18,27 @@ function sanitizeUser(user: any) {
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(page = 1, limit = 10) {
+  async findAll(page = 1, limit = 10, search?: string) {
     const skip = calculateSkip(page, limit);
+    
+    const where: any = { deletedAt: null };
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
-        where: { deletedAt: null },
+        where,
         skip,
         take: limit,
         include: { role: true },
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.user.count({ where: { deletedAt: null } }),
+      this.prisma.user.count({ where }),
     ]);
 
     return buildPaginatedResponse(

@@ -11,6 +11,9 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
+  // Disable ETags to force 200 OK instead of 304
+  app.set('etag', false);
+  
   const logger = app.get(LoggerService);
 
   // Serve static files from public folder
@@ -25,7 +28,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'X-Requested-With'],
     credentials: true,
     preflightContinue: false,
-    optionsSuccessStatus: 204,
+    optionsSuccessStatus: 200,
   });
 
   // Global prefix
