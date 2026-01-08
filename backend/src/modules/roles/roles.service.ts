@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
 import { excludeFields } from '../../common/utils/sanitize.util';
+import { buildPaginatedResponse, calculateSkip } from '../../common/utils/pagination.util';
 
 // Sanitize role object - remove id and deletedAt
 function sanitizeRole(role: any) {
@@ -24,12 +25,33 @@ function sanitizeRole(role: any) {
 export class RolesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    const roles = await this.prisma.role.findMany({
-      where: { deletedAt: null },
-      orderBy: { name: 'asc' },
-    });
-    return { message: 'Success', data: roles.map((role) => excludeFields(role, ['id', 'deletedAt'])) };
+  async findAll(page = 1, limit = 10, search?: string) {
+    const skip = calculateSkip(page, limit);
+    
+    const where: any = { deletedAt: null };
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+    
+    const [roles, total] = await Promise.all([
+      this.prisma.role.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.role.count({ where }),
+    ]);
+
+    return buildPaginatedResponse(
+      roles.map((role) => excludeFields(role, ['id', 'deletedAt'])),
+      total,
+      page,
+      limit,
+    );
   }
 
   async findOne(uuid: string) {

@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseUUIDPipe, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -15,9 +16,9 @@ export class RolesController {
 
   @Get()
   @Roles('Admin')
-  @ApiOperation({ summary: 'Get all roles' })
-  async findAll() {
-    return this.rolesService.findAll();
+  @ApiOperation({ summary: 'Get all roles with pagination' })
+  async findAll(@Query() query: PaginationQueryDto) {
+    return this.rolesService.findAll(query.page, query.limit, query.search);
   }
 
   @Get(':uuid')
