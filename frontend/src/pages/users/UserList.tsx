@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { userService, type User } from '@/services/user.service';
 import { roleService, type Role } from '@/services/role.service';
-import { DataTable, type Column, type RowAction } from '@/components/ui/data-table';
+import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
 import { FormSheet, ViewSheet, FieldDisplay } from '@/components/ui/form-sheet';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { userFormSchema, type UserFormData } from '@/lib/validations';
 
@@ -199,7 +199,7 @@ export default function UserList() {
       key: 'role',
       header: 'Role',
       cell: (user) => (
-        <Badge variant="secondary" className="font-normal capitalize">
+        <Badge variant="outline" className="font-normal capitalize">
           {user.role?.name || 'User'}
         </Badge>
       ),
@@ -209,7 +209,7 @@ export default function UserList() {
       header: 'Status',
       cell: (user) => (
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-muted'}`} />
+          <div className={`h-2 w-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
           <span className="text-sm">{user.isActive ? 'Active' : 'Inactive'}</span>
         </div>
       ),
@@ -217,63 +217,44 @@ export default function UserList() {
     {
       key: 'createdAt',
       header: 'Created At',
-      headerClassName: 'hidden md:table-cell',
-      className: 'hidden md:table-cell text-muted-foreground text-sm',
-      cell: (user) => new Date(user.createdAt).toLocaleDateString(),
+      cell: (user) => (
+        <span className="text-muted-foreground">
+          {new Date(user.createdAt).toLocaleDateString()}
+        </span>
+      ),
     },
   ];
 
   // Table actions
-  const actions: RowAction<User>[] = [
-    {
-      label: 'View',
-      icon: <Eye className="mr-2 h-3.5 w-3.5" />,
-      onClick: openViewDrawer,
-    },
-    {
-      label: 'Edit',
-      icon: <Edit2 className="mr-2 h-3.5 w-3.5" />,
-      onClick: openEditDrawer,
-    },
-    {
-      label: 'Delete',
-      icon: <Trash2 className="mr-2 h-3.5 w-3.5" />,
-      onClick: confirmDelete,
-      variant: 'destructive',
-      separator: true,
-    },
-  ];
+  const tableActions: TableActions<User> = {
+    onView: openViewDrawer,
+    onEdit: openEditDrawer,
+    onDelete: confirmDelete,
+  };
 
   return (
-    <div className="w-full space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Users</h2>
-          <p className="text-muted-foreground">
-            Manage your user accounts and permissions.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" className="h-8" onClick={openCreateDrawer}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-        </div>
-      </div>
-
-      {/* Data Table */}
+    <div className="w-full">
+      {/* All-in-one Card Table */}
       <DataTable
+        title="Users"
+        description="Manage your user accounts and permissions."
+        headerAction={
+          <Button onClick={openCreateDrawer}>
+            <Plus className="mr-2 h-4 w-4" />
+            Tambah User
+          </Button>
+        }
         data={filteredUsers}
         columns={columns}
-        actions={actions}
+        actions={tableActions}
         loading={loading}
-        searchPlaceholder="Filter users..."
+        searchPlaceholder="Search..."
         searchValue={search}
         onSearch={setSearch}
         emptyMessage="No users found."
         keyExtractor={(user) => user.uuid}
         totalItems={users.length}
+        totalPages={Math.ceil(users.length / 10)}
         showPagination={filteredUsers.length > 0}
       />
 
