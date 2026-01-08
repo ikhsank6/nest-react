@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
@@ -64,12 +65,10 @@ export default function DashboardLayout() {
             <ModeToggle />
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6 p-4 pt-0">
+        <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
           <Outlet />
         </main>
       </SidebarInset>
     </SidebarProvider>
   );
 }
-
-import * as React from "react"

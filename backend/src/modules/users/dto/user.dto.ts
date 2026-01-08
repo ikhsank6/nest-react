@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsEmail, IsOptional, IsInt, IsBoolean, MinLength } from 'class-validator';
+import { IsNotEmpty, IsEmail, IsOptional, IsInt, IsBoolean, MinLength, IsUUID, IsString } from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty({ message: 'nama harus diisi.' })
@@ -12,9 +12,13 @@ export class CreateUserDto {
   @MinLength(6, { message: 'password minimal 6 karakter.' })
   password: string;
 
-  @IsNotEmpty({ message: 'roleId harus diisi.' })
+  @IsOptional()
   @IsInt({ message: 'roleId harus berupa angka.' })
-  roleId: number;
+  roleId?: number;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'roleUuid harus berupa UUID yang valid.' })
+  roleUuid?: string;
 
   @IsOptional()
   @IsBoolean({ message: 'isActive harus boolean.' })
@@ -37,6 +41,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsInt({ message: 'roleId harus berupa angka.' })
   roleId?: number;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'roleUuid harus berupa UUID yang valid.' })
+  roleUuid?: string;
 
   @IsOptional()
   @IsBoolean({ message: 'isActive harus boolean.' })

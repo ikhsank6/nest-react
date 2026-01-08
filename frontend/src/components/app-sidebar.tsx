@@ -15,7 +15,6 @@ import {
   BadgeCheck,
   CreditCard,
   Bell,
-  AudioLines,
 } from "lucide-react"
 
 import {
@@ -48,10 +47,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuthStore } from "@/stores/auth.store"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useAuthStore, type AuthMenu } from "@/stores/auth.store"
 import { authService } from "@/services/auth.service"
-import { menuService, type Menu } from "@/services/menu.service"
 
 const iconMap: Record<string, React.ComponentType<any>> = {
   LayoutDashboard,
@@ -63,15 +72,11 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [menus, setMenus] = React.useState<Menu[]>([])
   const location = useLocation()
-  const { user } = useAuthStore()
+  const { user, menus } = useAuthStore()
   const navigate = useNavigate()
   const { isMobile } = useSidebar()
-
-  React.useEffect(() => {
-    menuService.getMyMenus().then(setMenus).catch(console.error)
-  }, [])
+  const [showLogoutDialog, setShowLogoutDialog] = React.useState(false)
 
   const handleLogout = () => {
     authService.logout()
@@ -101,11 +106,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupLabel>Platform</SidebarGroupLabel>
           <SidebarMenu>
-            {menus.map((menu) => {
+            {menus.map((menu: AuthMenu) => {
               const Icon = menu.icon ? iconMap[menu.icon] || SquareTerminal : SquareTerminal
               const hasChildren = menu.children && menu.children.length > 0
               const isActive = menu.path === location.pathname || 
-                               menu.children?.some(child => child.path === location.pathname)
+                               menu.children?.some((child: AuthMenu) => child.path === location.pathname)
 
               if (hasChildren) {
                 return (
@@ -125,7 +130,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {menu.children?.map((subItem) => (
+                          {menu.children?.map((subItem: AuthMenu) => (
                             <SidebarMenuSubItem key={subItem.uuid}>
                               <SidebarMenuSubButton asChild isActive={location.pathname === subItem.path}>
                                 <Link to={subItem.path || "#"}>
@@ -218,7 +223,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem 
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    setShowLogoutDialog(true)
+                  }}
+                >
                   <LogOut className="mr-2 size-4" />
                   Log out
                 </DropdownMenuItem>
@@ -228,6 +238,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin keluar dari akun Anda? Anda perlu login kembali untuk mengakses dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout}>
+              Ya, Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sidebar>
   )
 }

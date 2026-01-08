@@ -75,11 +75,29 @@ export class UsersService {
       throw new BadRequestException('Email sudah terdaftar.');
     }
 
+    // Handle roleUuid -> roleId conversion
+    let roleId = createUserDto.roleId;
+    if (createUserDto.roleUuid && !roleId) {
+      const role = await this.prisma.role.findFirst({
+        where: { uuid: createUserDto.roleUuid, deletedAt: null },
+      });
+      if (!role) {
+        throw new BadRequestException('Role tidak ditemukan.');
+      }
+      roleId = role.id;
+    }
+
+    if (!roleId) {
+      throw new BadRequestException('roleId atau roleUuid harus diisi.');
+    }
+
     const hashedPassword = await hashPassword(createUserDto.password);
 
+    const { roleUuid, ...dataWithoutRoleUuid } = createUserDto;
     const user = await this.prisma.user.create({
       data: {
-        ...createUserDto,
+        ...dataWithoutRoleUuid,
+        roleId,
         password: hashedPassword,
       },
       include: { role: true },
@@ -106,7 +124,25 @@ export class UsersService {
       }
     }
 
-    const data: any = { ...updateUserDto };
+    // Handle roleUuid -> roleId conversion
+    let roleId = updateUserDto.roleId;
+    if (updateUserDto.roleUuid && !roleId) {
+      const role = await this.prisma.role.findFirst({
+        where: { uuid: updateUserDto.roleUuid, deletedAt: null },
+      });
+      if (!role) {
+        throw new BadRequestException('Role tidak ditemukan.');
+      }
+      roleId = role.id;
+    }
+
+    const { roleUuid, ...dataWithoutRoleUuid } = updateUserDto;
+    const data: any = { ...dataWithoutRoleUuid };
+    
+    if (roleId) {
+      data.roleId = roleId;
+    }
+    
     if (updateUserDto.password) {
       data.password = await hashPassword(updateUserDto.password);
     }
@@ -138,4 +174,3 @@ export class UsersService {
     return { message: 'User berhasil dihapus.', data: {} };
   }
 }
-

@@ -16,16 +16,30 @@ export interface AuthUser {
   } | null;
 }
 
+// Menu type
+export interface AuthMenu {
+  id: number;
+  uuid: string;
+  name: string;
+  path: string | null;
+  icon: string | null;
+  order: number;
+  isActive: boolean;
+  children?: AuthMenu[];
+}
+
 interface AuthState {
   // State
   user: AuthUser | null;
   token: string | null;
+  menus: AuthMenu[];
   isAuthenticated: boolean;
   isLoading: boolean;
 
   // Actions
-  setAuth: (user: AuthUser, token: string) => void;
+  setAuth: (user: AuthUser, token: string, menus?: AuthMenu[]) => void;
   setUser: (user: AuthUser) => void;
+  setMenus: (menus: AuthMenu[]) => void;
   setLoading: (loading: boolean) => void;
   logout: () => void;
   hydrate: () => void;
@@ -36,8 +50,10 @@ const cookieStorage = {
   getItem: (_name: string) => {
     const token = cookieUtils.getToken();
     const user = cookieUtils.getUser<AuthUser>();
+    const menusStr = localStorage.getItem('auth-menus');
+    const menus = menusStr ? JSON.parse(menusStr) : [];
     if (token && user) {
-      return JSON.stringify({ state: { user, token, isAuthenticated: true } });
+      return JSON.stringify({ state: { user, token, menus, isAuthenticated: true } });
     }
     return null;
   },
@@ -50,12 +66,16 @@ const cookieStorage = {
       if (parsed.state?.user) {
         cookieUtils.setUser(parsed.state.user);
       }
+      if (parsed.state?.menus) {
+        localStorage.setItem('auth-menus', JSON.stringify(parsed.state.menus));
+      }
     } catch {
       // Ignore parse errors
     }
   },
   removeItem: (_name: string) => {
     cookieUtils.clearAuth();
+    localStorage.removeItem('auth-menus');
   },
 };
 
@@ -65,14 +85,16 @@ export const useAuthStore = create<AuthState>()(
       // Initial state
       user: null,
       token: null,
+      menus: [],
       isAuthenticated: false,
       isLoading: true,
 
-      // Set auth (user + token)
-      setAuth: (user, token) => {
+      // Set auth (user + token + menus)
+      setAuth: (user, token, menus = []) => {
         cookieUtils.setToken(token);
         cookieUtils.setUser(user);
-        set({ user, token, isAuthenticated: true, isLoading: false });
+        localStorage.setItem('auth-menus', JSON.stringify(menus));
+        set({ user, token, menus, isAuthenticated: true, isLoading: false });
       },
 
       // Update user only
@@ -81,21 +103,30 @@ export const useAuthStore = create<AuthState>()(
         set({ user });
       },
 
+      // Update menus only
+      setMenus: (menus) => {
+        localStorage.setItem('auth-menus', JSON.stringify(menus));
+        set({ menus });
+      },
+
       // Set loading state
       setLoading: (loading) => set({ isLoading: loading }),
 
       // Logout
       logout: () => {
         cookieUtils.clearAuth();
-        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+        localStorage.removeItem('auth-menus');
+        set({ user: null, token: null, menus: [], isAuthenticated: false, isLoading: false });
       },
 
       // Hydrate from cookies
       hydrate: () => {
         const token = cookieUtils.getToken();
         const user = cookieUtils.getUser<AuthUser>();
+        const menusStr = localStorage.getItem('auth-menus');
+        const menus = menusStr ? JSON.parse(menusStr) : [];
         if (token && user) {
-          set({ user, token, isAuthenticated: true, isLoading: false });
+          set({ user, token, menus, isAuthenticated: true, isLoading: false });
         } else {
           set({ isLoading: false });
         }
@@ -104,7 +135,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => cookieStorage),
-      partialize: (state) => ({ user: state.user, token: state.token }),
+      partialize: (state) => ({ user: state.user, token: state.token, menus: state.menus }),
     }
   )
 );

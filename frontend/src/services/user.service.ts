@@ -18,7 +18,7 @@ export interface CreateUserData {
   name: string;
   email: string;
   password: string;
-  roleId: number;
+  roleUuid: string;
   isActive?: boolean;
 }
 
@@ -26,7 +26,7 @@ export interface UpdateUserData {
   name?: string;
   email?: string;
   password?: string;
-  roleId?: number;
+  roleUuid?: string;
   isActive?: boolean;
 }
 

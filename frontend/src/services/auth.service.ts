@@ -1,6 +1,6 @@
 import api from '@/config/axios';
 import { cookieUtils } from '@/lib/cookies';
-import { useAuthStore, type AuthUser } from '@/stores/auth.store';
+import { useAuthStore, type AuthUser, type AuthMenu } from '@/stores/auth.store';
 
 export interface LoginData {
   email: string;
@@ -17,6 +17,7 @@ export interface RegisterData {
 export interface AuthResponse {
   accessToken: string;
   user: AuthUser;
+  menus: AuthMenu[];
 }
 
 export const authService = {
@@ -25,8 +26,8 @@ export const authService = {
     const authData = response?.data as AuthResponse;
     
     if (authData?.accessToken) {
-      // Update Zustand store (which syncs with cookies)
-      useAuthStore.getState().setAuth(authData.user, authData.accessToken);
+      // Update Zustand store (which syncs with cookies) - include menus
+      useAuthStore.getState().setAuth(authData.user, authData.accessToken, authData.menus || []);
     }
     
     return authData;

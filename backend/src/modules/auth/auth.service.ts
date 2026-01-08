@@ -3,12 +3,14 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto } from './dto';
 import { hashPassword, comparePassword } from '../../common/utils/hash.util';
+import { MenuAccessService } from '../menu-access/menu-access.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private menuAccessService: MenuAccessService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -34,16 +36,30 @@ export class AuthService {
     const payload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = this.jwtService.sign(payload);
 
+    // Get accessible menus for user's role
+    let menus: any[] = [];
+    if (user.roleId) {
+      const menusResult = await this.menuAccessService.getAccessibleMenus(user.roleId);
+      menus = menusResult.data;
+    }
+
     return {
       message: 'Login berhasil',
       data: {
         accessToken,
         user: {
-          id: user.id,
+          uuid: user.uuid,
           email: user.email,
           name: user.name,
-          role: user.role,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          role: user.role ? {
+            uuid: user.role.uuid,
+            name: user.role.name,
+          } : null,
         },
+        menus,
       },
     };
   }
@@ -82,10 +98,13 @@ export class AuthService {
       message: 'Registrasi berhasil',
       data: {
         user: {
-          id: user.id,
+          uuid: user.uuid,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: user.role ? {
+            uuid: user.role.uuid,
+            name: user.role.name,
+          } : null,
         },
       },
     };
@@ -139,11 +158,18 @@ export class AuthService {
     return {
       message: 'Success',
       data: {
-        id: user.id,
+        uuid: user.uuid,
         email: user.email,
         name: user.name,
-        role: user.role,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        role: user.role ? {
+          uuid: user.role.uuid,
+          name: user.role.name,
+        } : null,
       },
     };
   }
 }
+
