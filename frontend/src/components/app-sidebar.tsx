@@ -1,23 +1,21 @@
 import * as React from "react"
-import { useLocation, Link } from "react-router-dom"
+import { useLocation, Link, useNavigate } from "react-router-dom"
 import {
   SquareTerminal,
-  Bot,
-  BookOpen,
-  Settings2,
   LayoutDashboard,
   Users,
   Shield,
   Database,
-  Command,
   ChevronRight,
-  ChevronsUpDown,
-  User as UserIcon,
   LogOut,
+  Command,
+  ChevronsUpDown,
+  Settings2,
   Sparkles,
   BadgeCheck,
-  Bell,
   CreditCard,
+  Bell,
+  AudioLines,
 } from "lucide-react"
 
 import {
@@ -51,11 +49,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import type { Menu } from "@/services/menu.service"
-import { menuService } from "@/services/menu.service"
 import { useAuthStore } from "@/stores/auth.store"
 import { authService } from "@/services/auth.service"
-import { useNavigate } from "react-router-dom"
+import { menuService, type Menu } from "@/services/menu.service"
 
 const iconMap: Record<string, React.ComponentType<any>> = {
   LayoutDashboard,
@@ -63,8 +59,6 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Shield,
   Database,
   SquareTerminal,
-  Bot,
-  BookOpen,
   Settings2,
 }
 
@@ -89,39 +83,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <Command className="size-4" />
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">Acme Inc</span>
-                    <span className="truncate text-xs">Enterprise</span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                align="start"
-                side="bottom"
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="text-muted-foreground text-xs">
-                  Teams
-                </DropdownMenuLabel>
-                <DropdownMenuItem className="gap-2 p-2">
-                  <div className="flex size-6 items-center justify-center rounded-sm border">
-                    <Command className="size-4 shrink-0" />
-                  </div>
-                  Acme Inc
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <SidebarMenuButton size="lg" asChild>
+              <Link to="/dashboard">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <Command className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Acme Inc</span>
+                  <span className="truncate text-xs">Enterprise</span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -197,13 +169,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-bold">
-                      {user?.name?.charAt(0).toUpperCase() || "CN"}
-                    </AvatarFallback>
+                    <AvatarFallback className="rounded-lg">{user?.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user?.name || "shadcn"}</span>
-                    <span className="truncate text-xs">{user?.email || "m@example.com"}</span>
+                    <span className="truncate font-semibold">{user?.name}</span>
+                    <span className="truncate text-xs">{user?.email}</span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />
                 </SidebarMenuButton>
@@ -217,9 +187,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-bold">
-                        {user?.name?.charAt(0).toUpperCase() || "CN"}
-                      </AvatarFallback>
+                      <AvatarFallback className="rounded-lg">{user?.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-semibold">{user?.name}</span>

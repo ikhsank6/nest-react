@@ -15,47 +15,24 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { ModeToggle } from '@/components/mode-toggle';
-import { useAuthStore } from '@/stores/auth.store';
-import { authService } from '@/services/auth.service';
-import { useNavigate } from 'react-router-dom';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, LogOut, Home } from 'lucide-react';
 
 export default function DashboardLayout() {
-  const { user } = useAuthStore();
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const handleLogout = () => {
-    authService.logout();
-    navigate("/login");
-  };
-
   const pathnames = location.pathname.split("/").filter((x) => x);
 
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="bg-background">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b bg-background px-4 sticky top-0 z-30 transition-all duration-300">
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 sticky top-0 bg-background z-10 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+            <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem>
+                <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink asChild>
-                    <Link to="/dashboard" className="transition-colors hover:text-foreground">
-                      <Home className="size-4" />
-                    </Link>
+                    <Link to="/dashboard">Dashboard</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 {pathnames.map((name, index) => {
@@ -66,61 +43,33 @@ export default function DashboardLayout() {
                   if (name === "dashboard") return null;
 
                   return (
-                    <div key={routeTo} className="flex items-center">
-                      <BreadcrumbSeparator />
+                    <React.Fragment key={routeTo}>
+                      <BreadcrumbSeparator className="hidden md:block" />
                       <BreadcrumbItem>
                         {isLast ? (
-                          <BreadcrumbPage className="font-medium text-foreground">{formattedName}</BreadcrumbPage>
+                          <BreadcrumbPage>{formattedName}</BreadcrumbPage>
                         ) : (
                           <BreadcrumbLink asChild>
-                            <Link to={routeTo} className="transition-colors hover:text-foreground">{formattedName}</Link>
+                            <Link to={routeTo}>{formattedName}</Link>
                           </BreadcrumbLink>
                         )}
                       </BreadcrumbItem>
-                    </div>
+                    </React.Fragment>
                   );
                 })}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-
-          <div className="flex items-center gap-4">
+          <div className="ml-auto px-3">
             <ModeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 hover:bg-accent rounded-full p-1 transition-colors outline-none">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold ring-2 ring-primary/20">
-                      {user?.name?.charAt(0).toUpperCase() || "A"}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/dashboard")}>
-                  <User size={16} className="mr-2" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                  <LogOut size={16} className="mr-2" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6 transition-all duration-500 animate-in fade-in zoom-in-95">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6 p-4 pt-0">
           <Outlet />
         </main>
       </SidebarInset>
     </SidebarProvider>
   );
 }
+
+import * as React from "react"
