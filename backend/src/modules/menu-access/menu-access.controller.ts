@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseIntPipe, Request, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseUUIDPipe, Request, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { MenuAccessService } from './menu-access.service';
 import { CreateMenuAccessDto, UpdateMenuAccessDto, BulkMenuAccessDto } from './dto/menu-access.dto';
@@ -18,11 +18,11 @@ export class MenuAccessController {
     return this.menuAccessService.getAccessibleMenus(req.user.role.id);
   }
 
-  @Get('role/:roleId')
+  @Get('role/:roleUuid')
   @UseGuards(RolesGuard)
   @Roles('Admin')
-  async findByRole(@Param('roleId', ParseIntPipe) roleId: number) {
-    return this.menuAccessService.findByRole(roleId);
+  async findByRole(@Param('roleUuid', ParseUUIDPipe) roleUuid: string) {
+    return this.menuAccessService.findByRole(roleUuid);
   }
 
   @Post()
@@ -40,20 +40,20 @@ export class MenuAccessController {
     return this.menuAccessService.bulkUpdate(bulkDto);
   }
 
-  @Put(':id')
+  @Put(':uuid')
   @UseGuards(RolesGuard)
   @Roles('Admin')
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateMenuAccessDto: UpdateMenuAccessDto,
   ) {
-    return this.menuAccessService.update(id, updateMenuAccessDto);
+    return this.menuAccessService.update(uuid, updateMenuAccessDto);
   }
 
-  @Delete(':id')
+  @Delete(':uuid')
   @UseGuards(RolesGuard)
   @Roles('Admin')
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.menuAccessService.remove(id);
+  async remove(@Param('uuid', ParseUUIDPipe) uuid: string) {
+    return this.menuAccessService.remove(uuid);
   }
 }

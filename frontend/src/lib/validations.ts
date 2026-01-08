@@ -15,7 +15,7 @@ export type UserFormData = z.infer<typeof userFormSchema>
 export const createRoleSchema = z.object({
   name: z.string().min(1, "Nama role harus diisi").max(50, "Nama maksimal 50 karakter"),
   description: z.string().max(255, "Deskripsi maksimal 255 karakter").optional().or(z.literal("")),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean(),
 })
 
 export const updateRoleSchema = createRoleSchema
@@ -28,8 +28,8 @@ export const createMenuSchema = z.object({
   name: z.string().min(1, "Nama menu harus diisi").max(50, "Nama maksimal 50 karakter"),
   path: z.string().max(100, "Path maksimal 100 karakter").optional().or(z.literal("")),
   icon: z.string().max(50, "Icon maksimal 50 karakter").optional().or(z.literal("")),
-  order: z.number().int().min(0, "Order minimal 0").default(0),
-  isActive: z.boolean().default(true),
+  order: z.number().int().min(0, "Order minimal 0"),
+  isActive: z.boolean(),
   parentUuid: z.string().uuid("Parent menu tidak valid").optional().nullable(),
 })
 

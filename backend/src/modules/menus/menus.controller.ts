@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ParseUUIDPipe, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { MenusService } from './menus.service';
-import { CreateMenuDto, UpdateMenuDto } from './dto/menu.dto';
+import { CreateMenuDto, UpdateMenuDto, ReorderMenusDto } from './dto/menu.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -16,8 +16,9 @@ export class MenusController {
   @Get()
   @Roles('Admin')
   @ApiOperation({ summary: 'Get all menus with hierarchy' })
-  async findAll() {
-    return this.menusService.findAll();
+  @ApiQuery({ name: 'q', required: false, description: 'Search query' })
+  async findAll(@Query('q') q?: string) {
+    return this.menusService.findAll(q);
   }
 
   @Get(':uuid')
@@ -34,6 +35,14 @@ export class MenusController {
   @ApiOperation({ summary: 'Create new menu' })
   async create(@Body() createMenuDto: CreateMenuDto) {
     return this.menusService.create(createMenuDto);
+  }
+
+  @Post('reorder')
+  @HttpCode(200)
+  @Roles('Admin')
+  @ApiOperation({ summary: 'Reorder menus' })
+  async reorder(@Body() reorderMenusDto: ReorderMenusDto) {
+    return this.menusService.reorder(reorderMenusDto);
   }
 
   @Put(':uuid')

@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/auth.service';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations';
 import { toast } from 'sonner';
-import { Mail, ArrowLeft, Loader2, KeyRound, LayoutDashboard, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2, LayoutDashboard, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {

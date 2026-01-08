@@ -20,7 +20,27 @@ import {
   Trash2,
   Eye,
   RefreshCw,
+  Lock,
+  GripVertical,
+  X,
 } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   Select,
   SelectContent,
@@ -29,6 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { ActionButton } from "@/components/ui/action-button"
 
 // Column definition
 export interface Column<T> {
@@ -44,6 +65,13 @@ export interface TableActions<T> {
   onView?: (item: T) => void
   onEdit?: (item: T) => void
   onDelete?: (item: T) => void
+  customActions?: Array<{
+    label: string
+    onClick: (item: T) => void
+    icon: any // Can be Lucide icon name or component
+    variant?: "default" | "secondary" | "destructive" | "ghost"
+    className?: string
+  }>
 }
 
 interface DataTableProps<T> {
@@ -74,8 +102,43 @@ interface DataTableProps<T> {
   onPageChange?: (page: number) => void
   totalItems?: number
   itemsPerPage?: number
+
   onItemsPerPageChange?: (value: number) => void
+  onReorder?: (newOrder: T[]) => void
   className?: string
+}
+
+// Sortable Row Component
+function SortableTableRow({ children, id, className, ...props }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : 0,
+    position: isDragging ? "relative" : undefined,
+  } as React.CSSProperties;
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={cn(className, isDragging && "bg-muted/50 shadow-md")}
+      {...props}
+    >
+      <TableCell className="w-[50px] px-2 text-center cursor-move" {...attributes} {...listeners}>
+        <GripVertical className="h-4 w-4 text-muted-foreground/50 mx-auto" />
+      </TableCell>
+      {children}
+    </TableRow>
+  );
 }
 
 export function DataTable<T>({
@@ -102,10 +165,30 @@ export function DataTable<T>({
   totalItems,
   itemsPerPage = 10,
   onItemsPerPageChange,
+
+  onReorder,
   className,
 }: DataTableProps<T>) {
   const [viewMode, setViewMode] = React.useState<'table' | 'grid'>('table')
   const [goToPage, setGoToPage] = React.useState('')
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = data.findIndex((item) => keyExtractor(item) === active.id);
+      const newIndex = data.findIndex((item) => keyExtractor(item) === over.id);
+      
+      const newData = arrayMove(data, oldIndex, newIndex);
+      onReorder?.(newData);
+    }
+  };
 
   const handleGoToPage = () => {
     const page = parseInt(goToPage)
@@ -137,8 +220,18 @@ export function DataTable<T>({
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => onSearch(e.target.value)}
-              className="pl-9 bg-background/50 focus-visible:ring-1"
+              className="pl-9 pr-9 bg-background/50 focus-visible:ring-1"
             />
+            {searchValue && (
+              <Button
+                variant="ghost" 
+                size="icon"
+                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => onSearch("")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         )}
         
@@ -188,6 +281,101 @@ export function DataTable<T>({
       {/* Content Rendering */}
       {viewMode === 'table' ? (
         <div className="overflow-x-auto">
+          {onReorder ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent bg-muted/20">
+                    <TableHead className="w-[50px]"></TableHead>
+                    {columns.map((column) => (
+                      <TableHead 
+                        key={column.key} 
+                        className={cn("text-xs uppercase tracking-wider text-muted-foreground font-bold px-6 py-4", column.headerClassName)}
+                      >
+                        {column.header}
+                      </TableHead>
+                    ))}
+                    {actions && (
+                      <TableHead className="text-xs uppercase tracking-wider text-muted-foreground font-bold text-right w-[100px] px-6">
+                        Actions
+                      </TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <SortableContext 
+                    items={data.map((item) => keyExtractor(item))}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {data.map((item) => (
+                      <SortableTableRow 
+                        key={keyExtractor(item)} 
+                        id={keyExtractor(item)}
+                        className="group hover:bg-muted/30"
+                      >
+                        {columns.map((column) => (
+                          <TableCell key={column.key} className={cn("px-6 py-4", column.className)}>
+                            {column.cell(item)}
+                          </TableCell>
+                        ))}
+                        {actions && (
+                          <TableCell className="text-right px-6 py-4">
+                            <div className="flex items-center justify-end gap-1">
+                              {actions.onView && (
+                                <ActionButton 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background shadow-none"
+                                  onClick={() => actions.onView?.(item)}
+                                  icon={<Eye className="h-4 w-4" />}
+                                  tooltip="Lihat Detail"
+                                />
+                              )}
+                              {actions.onEdit && (
+                                <ActionButton 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-background shadow-none"
+                                  onClick={() => actions.onEdit?.(item)}
+                                  icon={<Edit2 className="h-4 w-4" />}
+                                  tooltip="Edit Data"
+                                />
+                              )}
+                              {actions.onDelete && (
+                                <ActionButton 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-background shadow-none"
+                                  onClick={() => actions.onDelete?.(item)}
+                                  icon={<Trash2 className="h-4 w-4" />}
+                                  tooltip="Hapus Data"
+                                />
+                              )}
+                              {actions.customActions?.map((action, idx) => (
+                                <ActionButton
+                                  key={idx}
+                                  variant={(action.variant as any) || "ghost"}
+                                  size="icon"
+                                  className={cn("h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background shadow-none", action.className)}
+                                  onClick={() => action.onClick(item)}
+                                  icon={action.icon === 'Lock' ? <Lock className="h-4 w-4" /> : action.icon}
+                                  tooltip={action.label}
+                                />
+                              ))}
+                            </div>
+                          </TableCell>
+                        )}
+                      </SortableTableRow>
+                    ))}
+                  </SortableContext>
+                </TableBody>
+              </Table>
+            </DndContext>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent bg-muted/20">
@@ -222,15 +410,15 @@ export function DataTable<T>({
                     <div className="flex flex-col items-center justify-center gap-3">
                       <span>{isError ? errorMessage : emptyMessage}</span>
                       {isError && onRefresh && (
-                        <Button 
+                        <ActionButton 
                           variant="outline" 
                           size="sm" 
                           onClick={onRefresh}
-                          className="h-8 gap-2 bg-background shadow-xs hover:bg-muted"
+                          className="h-8 bg-background shadow-xs hover:bg-muted"
+                          icon={<RefreshCw className="h-3.5 w-3.5" />}
                         >
-                          <RefreshCw className="h-3.5 w-3.5" />
                           Reload Data
-                        </Button>
+                        </ActionButton>
                       )}
                     </div>
                   </TableCell>
@@ -247,35 +435,46 @@ export function DataTable<T>({
                       <TableCell className="text-right px-6 py-4">
                         <div className="flex items-center justify-end gap-1">
                           {actions.onView && (
-                            <Button 
+                            <ActionButton 
                               variant="ghost" 
                               size="icon" 
                               className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background shadow-none"
                               onClick={() => actions.onView?.(item)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                              icon={<Eye className="h-4 w-4" />}
+                              tooltip="Lihat Detail"
+                            />
                           )}
                           {actions.onEdit && (
-                            <Button 
+                            <ActionButton 
                               variant="ghost" 
                               size="icon" 
                               className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-background shadow-none"
                               onClick={() => actions.onEdit?.(item)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
+                              icon={<Edit2 className="h-4 w-4" />}
+                              tooltip="Edit Data"
+                            />
                           )}
                           {actions.onDelete && (
-                            <Button 
+                            <ActionButton 
                               variant="ghost" 
                               size="icon" 
                               className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-background shadow-none"
                               onClick={() => actions.onDelete?.(item)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                              icon={<Trash2 className="h-4 w-4" />}
+                              tooltip="Hapus Data"
+                            />
                           )}
+                          {actions.customActions?.map((action, idx) => (
+                            <ActionButton
+                              key={idx}
+                              variant={(action.variant as any) || "ghost"}
+                              size="icon"
+                              className={cn("h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background shadow-none", action.className)}
+                              onClick={() => action.onClick(item)}
+                              icon={action.icon === 'Lock' ? <Lock className="h-4 w-4" /> : action.icon}
+                              tooltip={action.label}
+                            />
+                          ))}
                         </div>
                       </TableCell>
                     )}
@@ -284,6 +483,7 @@ export function DataTable<T>({
               )}
             </TableBody>
           </Table>
+          )}
         </div>
       ) : (
         /* Grid View */
@@ -297,15 +497,14 @@ export function DataTable<T>({
             <div className="flex flex-col justify-center items-center h-48 text-muted-foreground bg-background rounded-lg border border-dashed gap-3">
               <span>{isError ? errorMessage : emptyMessage}</span>
               {isError && onRefresh && (
-                <Button 
+                <ActionButton 
                   variant="outline" 
                   size="sm" 
                   onClick={onRefresh}
-                  className="gap-2"
+                  icon={<RefreshCw className="h-3.5 w-3.5" />}
                 >
-                  <RefreshCw className="h-3.5 w-3.5" />
                   Reload Data
-                </Button>
+                </ActionButton>
               )}
             </div>
           ) : (
@@ -330,34 +529,34 @@ export function DataTable<T>({
                     {actions && (
                       <div className="flex items-center justify-end gap-2 mt-2 pt-4 border-t border-muted">
                         {actions.onView && (
-                          <Button 
+                          <ActionButton 
                             variant="secondary" 
                             size="sm" 
                             className="h-8 w-8 p-0 rounded-full"
                             onClick={() => actions.onView?.(item)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                            icon={<Eye className="h-4 w-4" />}
+                            tooltip="Lihat Detail"
+                          />
                         )}
                         {actions.onEdit && (
-                          <Button 
+                          <ActionButton 
                             variant="secondary" 
                             size="sm" 
                             className="h-8 w-8 p-0 rounded-full hover:text-primary hover:bg-primary/10"
                             onClick={() => actions.onEdit?.(item)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
+                            icon={<Edit2 className="h-4 w-4" />}
+                            tooltip="Edit Data"
+                          />
                         )}
                         {actions.onDelete && (
-                          <Button 
+                          <ActionButton 
                             variant="secondary" 
                             size="sm" 
                             className="h-8 w-8 p-0 rounded-full hover:text-destructive hover:bg-destructive/10"
                             onClick={() => actions.onDelete?.(item)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            icon={<Trash2 className="h-4 w-4" />}
+                            tooltip="Hapus Data"
+                          />
                         )}
                       </div>
                     )}

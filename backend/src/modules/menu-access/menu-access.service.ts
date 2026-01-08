@@ -6,14 +6,14 @@ import { CreateMenuAccessDto, UpdateMenuAccessDto, BulkMenuAccessDto } from './d
 export class MenuAccessService {
   constructor(private prisma: PrismaService) {}
 
-  async findByRole(roleId: number) {
-    const role = await this.prisma.role.findUnique({ where: { id: roleId } });
+  async findByRole(roleUuid: string) {
+    const role = await this.prisma.role.findFirst({ where: { uuid: roleUuid } });
     if (!role) {
       throw new NotFoundException('Role tidak ditemukan.');
     }
 
     const menuAccess = await this.prisma.menuAccess.findMany({
-      where: { roleId },
+      where: { roleId: role.id },
       include: { menu: true },
       orderBy: { menu: { order: 'asc' } },
     });
@@ -60,11 +60,21 @@ export class MenuAccessService {
   }
 
   async create(createMenuAccessDto: CreateMenuAccessDto) {
+    const role = await this.prisma.role.findFirst({
+      where: { uuid: createMenuAccessDto.roleUuid },
+    });
+    if (!role) throw new NotFoundException('Role tidak ditemukan');
+
+    const menu = await this.prisma.menu.findFirst({
+      where: { uuid: createMenuAccessDto.menuUuid },
+    });
+    if (!menu) throw new NotFoundException('Menu tidak ditemukan');
+
     const existing = await this.prisma.menuAccess.findUnique({
       where: {
         roleId_menuId: {
-          roleId: createMenuAccessDto.roleId,
-          menuId: createMenuAccessDto.menuId,
+          roleId: role.id,
+          menuId: menu.id,
         },
       },
     });
@@ -73,22 +83,28 @@ export class MenuAccessService {
       throw new BadRequestException('Menu access sudah ada.');
     }
 
+    const { roleUuid, menuUuid, ...data } = createMenuAccessDto;
+
     const menuAccess = await this.prisma.menuAccess.create({
-      data: createMenuAccessDto,
+      data: {
+        ...data,
+        roleId: role.id,
+        menuId: menu.id,
+      },
       include: { menu: true, role: true },
     });
 
     return { message: 'Menu access berhasil dibuat.', data: menuAccess };
   }
 
-  async update(id: number, updateMenuAccessDto: UpdateMenuAccessDto) {
-    const existing = await this.prisma.menuAccess.findUnique({ where: { id } });
+  async update(uuid: string, updateMenuAccessDto: UpdateMenuAccessDto) {
+    const existing = await this.prisma.menuAccess.findFirst({ where: { uuid } });
     if (!existing) {
       throw new NotFoundException('Menu access tidak ditemukan.');
     }
 
     const menuAccess = await this.prisma.menuAccess.update({
-      where: { id },
+      where: { id: existing.id },
       data: updateMenuAccessDto,
       include: { menu: true, role: true },
     });
@@ -97,38 +113,50 @@ export class MenuAccessService {
   }
 
   async bulkUpdate(bulkDto: BulkMenuAccessDto) {
-    const { roleId, menuAccess } = bulkDto;
+    const { roleUuid, menuAccess } = bulkDto;
 
-    const role = await this.prisma.role.findUnique({ where: { id: roleId } });
+    const role = await this.prisma.role.findFirst({ where: { uuid: roleUuid } });
     if (!role) {
       throw new NotFoundException('Role tidak ditemukan.');
     }
 
+    // Get all menu IDs from UUIDs
+    const menuUuids = menuAccess.map((m) => m.menuUuid);
+    const menus = await this.prisma.menu.findMany({
+      where: { uuid: { in: menuUuids } },
+    });
+    
+    const menuMap = new Map(menus.map(m => [m.uuid, m.id]));
+
     // Delete existing menu access for this role
-    await this.prisma.menuAccess.deleteMany({ where: { roleId } });
+    await this.prisma.menuAccess.deleteMany({ where: { roleId: role.id } });
 
     // Create new menu access entries
-    const data = menuAccess.map((item) => ({
-      roleId,
-      menuId: item.menuId,
-      canView: item.canView ?? true,
-      canCreate: item.canCreate ?? false,
-      canEdit: item.canEdit ?? false,
-      canDelete: item.canDelete ?? false,
-    }));
+    const data = menuAccess
+      .filter(item => menuMap.has(item.menuUuid))
+      .map((item) => ({
+        roleId: role.id,
+        menuId: menuMap.get(item.menuUuid)!,
+        canView: item.canView ?? true,
+        canCreate: item.canCreate ?? false,
+        canEdit: item.canEdit ?? false,
+        canDelete: item.canDelete ?? false,
+      }));
 
-    await this.prisma.menuAccess.createMany({ data });
+    if (data.length > 0) {
+      await this.prisma.menuAccess.createMany({ data });
+    }
 
     return { message: 'Menu access berhasil diupdate.', data: {} };
   }
 
-  async remove(id: number) {
-    const existing = await this.prisma.menuAccess.findUnique({ where: { id } });
+  async remove(uuid: string) {
+    const existing = await this.prisma.menuAccess.findFirst({ where: { uuid } });
     if (!existing) {
       throw new NotFoundException('Menu access tidak ditemukan.');
     }
 
-    await this.prisma.menuAccess.delete({ where: { id } });
+    await this.prisma.menuAccess.delete({ where: { id: existing.id } });
     return { message: 'Menu access berhasil dihapus.', data: {} };
   }
 }

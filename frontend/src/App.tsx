@@ -8,6 +8,8 @@ import Register from '@/pages/auth/Register';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import Dashboard from '@/pages/dashboard/Dashboard';
 import UserList from '@/pages/users/UserList';
+import RoleList from '@/pages/roles/RoleList';
+import MenuList from '@/pages/menus/MenuList';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -76,9 +78,9 @@ export default function App() {
           >
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<UserList />} />
-            <Route path="roles" element={<ComingSoon title="Roles" />} />
-            <Route path="menus" element={<ComingSoon title="Menus" />} />
-            <Route path="menu-access" element={<ComingSoon title="Menu Access" />} />
+            <Route path="roles" element={<RoleList />} />
+            <Route path="menus" element={<MenuList />} />
+            <Route path="menu-access" element={<Navigate to="/roles" replace />} />
           </Route>
 
           {/* 404 */}
@@ -89,13 +91,3 @@ export default function App() {
   );
 }
 
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-2">{title}</h1>
-        <p className="text-[hsl(var(--muted-foreground))]">Coming soon...</p>
-      </div>
-    </div>
-  );
-}

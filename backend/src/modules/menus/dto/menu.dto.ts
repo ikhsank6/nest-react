@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsInt, IsBoolean, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsInt, IsBoolean, IsString, IsUUID, IsArray, ArrayMinSize, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateMenuDto {
   @IsNotEmpty({ message: 'nama menu harus diisi.' })
@@ -48,3 +49,22 @@ export class UpdateMenuDto {
   isActive?: boolean;
 }
 
+export class ReorderMenuItemDto {
+  @IsUUID('4', { message: 'uuid harus berupa UUID yang valid.' })
+  uuid: string;
+
+  @IsInt({ message: 'order harus berupa angka.' })
+  order: number;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'parentUuid harus berupa UUID yang valid.' })
+  parentUuid?: string | null;
+}
+
+export class ReorderMenusDto {
+  @IsArray({ message: 'Items harus berupa array.' })
+  @ArrayMinSize(1, { message: 'Minimal harus ada 1 item untuk di-reorder.' })
+  @ValidateNested({ each: true })
+  @Type(() => ReorderMenuItemDto)
+  items: ReorderMenuItemDto[];
+}

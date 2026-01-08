@@ -19,9 +19,9 @@ export const menuService = {
     return response?.data || [];
   },
 
-  getAll: async (): Promise<Menu[]> => {
-    const response = await api.get('/menus') as any;
-    return response?.data || [];
+  getAll: async (params?: { search?: string }): Promise<any> => {
+    const response = await api.get('/menus', { params: { q: params?.search } }) as any;
+    return response;
   },
 
   getOne: async (uuid: string) => {
@@ -41,5 +41,10 @@ export const menuService = {
 
   delete: async (uuid: string) => {
     return api.delete(`/menus/${uuid}`);
+  },
+
+  reorder: async (items: { uuid: string; order: number; parentUuid?: string | null }[]) => {
+    const response = await api.post('/menus/reorder', { items }) as any;
+    return response?.data;
   },
 };

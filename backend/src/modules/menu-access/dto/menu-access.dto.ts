@@ -1,14 +1,14 @@
-import { IsNotEmpty, IsInt, IsBoolean, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsInt, IsBoolean, IsOptional, IsArray, ValidateNested, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateMenuAccessDto {
-  @IsNotEmpty({ message: 'roleId harus diisi.' })
-  @IsInt({ message: 'roleId harus berupa angka.' })
-  roleId: number;
+  @IsNotEmpty({ message: 'roleUuid harus diisi.' })
+  @IsUUID('4', { message: 'roleUuid harus berupa UUID.' })
+  roleUuid: string;
 
-  @IsNotEmpty({ message: 'menuId harus diisi.' })
-  @IsInt({ message: 'menuId harus berupa angka.' })
-  menuId: number;
+  @IsNotEmpty({ message: 'menuUuid harus diisi.' })
+  @IsUUID('4', { message: 'menuUuid harus berupa UUID.' })
+  menuUuid: string;
 
   @IsOptional()
   @IsBoolean({ message: 'canView harus boolean.' })
@@ -46,9 +46,9 @@ export class UpdateMenuAccessDto {
 }
 
 export class BulkMenuAccessDto {
-  @IsNotEmpty({ message: 'roleId harus diisi.' })
-  @IsInt({ message: 'roleId harus berupa angka.' })
-  roleId: number;
+  @IsNotEmpty({ message: 'roleUuid harus diisi.' })
+  @IsUUID('4', { message: 'roleUuid harus berupa UUID.' })
+  roleUuid: string;
 
   @IsArray({ message: 'menuAccess harus array.' })
   @ValidateNested({ each: true })
@@ -57,9 +57,9 @@ export class BulkMenuAccessDto {
 }
 
 export class MenuAccessItemDto {
-  @IsNotEmpty({ message: 'menuId harus diisi.' })
-  @IsInt({ message: 'menuId harus berupa angka.' })
-  menuId: number;
+  @IsNotEmpty({ message: 'menuUuid harus diisi.' })
+  @IsUUID('4', { message: 'menuUuid harus berupa UUID.' })
+  menuUuid: string;
 
   @IsOptional()
   @IsBoolean()

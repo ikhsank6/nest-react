@@ -50,6 +50,7 @@ export function useTable<T>(key: string, fetchFn: (page: number, limit: number, 
     setPage: (page: number) => store.setPage(key, page),
     setLimit: (limit: number) => store.setLimit(key, limit),
     setSearch: (search: string) => store.setSearch(key, search),
+    setData: (data: T[]) => store.setData(key, data),
     refresh: loadData,
   };
 }
