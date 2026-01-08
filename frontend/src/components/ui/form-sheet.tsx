@@ -34,7 +34,7 @@ export function FormSheet({
   children,
   onSubmit,
   submitLabel = "Simpan",
-  cancelLabel = "Tutup",
+  cancelLabel = "Batal",
   loading = false,
   showFooter = true,
   footerContent,
@@ -50,35 +50,35 @@ export function FormSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side={side} 
-        className={cn("flex flex-col sm:max-w-md", className)}
+        className={cn("flex flex-col sm:max-w-md p-0", className)}
       >
-        <SheetHeader className="text-left">
+        <SheetHeader className="text-left px-6 pt-6">
           <SheetTitle>{title}</SheetTitle>
           {description && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>
 
         {onSubmit ? (
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 overflow-y-auto py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               {children}
             </div>
             
             {showFooter && (
-              <div className="flex flex-col gap-2 pt-4 border-t mt-auto">
+              <div className="flex gap-3 p-6 border-t mt-auto bg-background">
                 {footerContent || (
                   <>
-                    <Button type="submit" disabled={loading} className="w-full">
-                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {submitLabel}
-                    </Button>
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={() => onOpenChange(false)} 
                       disabled={loading}
-                      className="w-full"
+                      className="flex-1"
                     >
                       {cancelLabel}
+                    </Button>
+                    <Button type="submit" disabled={loading} className="flex-1">
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {submitLabel}
                     </Button>
                   </>
                 )}
@@ -87,17 +87,17 @@ export function FormSheet({
           </form>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               {children}
             </div>
             
             {showFooter && (
-              <div className="flex flex-col gap-2 pt-4 border-t mt-auto">
+              <div className="flex gap-3 p-6 border-t mt-auto bg-background">
                 {footerContent || (
                   <Button 
                     variant="outline" 
                     onClick={() => onOpenChange(false)}
-                    className="w-full"
+                    className="flex-1"
                   >
                     {cancelLabel}
                   </Button>
@@ -141,30 +141,30 @@ export function ViewSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side={side} 
-        className={cn("flex flex-col sm:max-w-md", className)}
+        className={cn("flex flex-col sm:max-w-md p-0", className)}
       >
-        <SheetHeader className="text-left">
+        <SheetHeader className="text-left px-6 pt-6">
           <SheetTitle>{title}</SheetTitle>
           {description && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {children}
         </div>
 
-        <div className="flex flex-col gap-2 pt-4 border-t mt-auto">
-          {onEdit && (
-            <Button onClick={onEdit} className="w-full">
-              {editLabel}
-            </Button>
-          )}
+        <div className="flex gap-3 p-6 border-t mt-auto bg-background">
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
-            className="w-full"
+            className="flex-1"
           >
             {closeLabel}
           </Button>
+          {onEdit && (
+            <Button onClick={onEdit} className="flex-1">
+              {editLabel}
+            </Button>
+          )}
         </div>
       </SheetContent>
     </Sheet>

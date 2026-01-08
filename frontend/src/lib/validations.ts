@@ -1,24 +1,15 @@
 import { z } from "zod"
 
-// User schemas
-export const createUserSchema = z.object({
+// User schemas - unified schema for both create and edit
+export const userFormSchema = z.object({
   name: z.string().min(1, "Nama harus diisi").max(100, "Nama maksimal 100 karakter"),
   email: z.string().min(1, "Email harus diisi").email("Format email tidak valid"),
-  password: z.string().min(6, "Password minimal 6 karakter").max(50, "Password maksimal 50 karakter"),
-  roleUuid: z.string().min(1, "Role harus dipilih").uuid("Role tidak valid"),
-  isActive: z.boolean().default(true),
+  password: z.string(),
+  roleUuid: z.string().min(1, "Role harus dipilih"),
+  isActive: z.boolean(),
 })
 
-export const updateUserSchema = z.object({
-  name: z.string().min(1, "Nama harus diisi").max(100, "Nama maksimal 100 karakter"),
-  email: z.string().min(1, "Email harus diisi").email("Format email tidak valid"),
-  password: z.string().max(50, "Password maksimal 50 karakter").optional().or(z.literal("")),
-  roleUuid: z.string().min(1, "Role harus dipilih").uuid("Role tidak valid"),
-  isActive: z.boolean().default(true),
-})
-
-export type CreateUserFormData = z.infer<typeof createUserSchema>
-export type UpdateUserFormData = z.infer<typeof updateUserSchema>
+export type UserFormData = z.infer<typeof userFormSchema>
 
 // Role schemas
 export const createRoleSchema = z.object({

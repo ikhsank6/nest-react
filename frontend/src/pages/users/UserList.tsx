@@ -9,8 +9,16 @@ import { DeleteDialog } from '@/components/ui/delete-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -20,12 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  createUserSchema, 
-  updateUserSchema, 
-  type CreateUserFormData, 
-  type UpdateUserFormData 
-} from '@/lib/validations';
+import { userFormSchema, type UserFormData } from '@/lib/validations';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -46,9 +49,9 @@ export default function UserList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  // Form setup with Zod
-  const createForm = useForm<CreateUserFormData>({
-    resolver: zodResolver(createUserSchema),
+  // Single form for both create and edit
+  const form = useForm<UserFormData>({
+    resolver: zodResolver(userFormSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -57,19 +60,6 @@ export default function UserList() {
       isActive: true,
     },
   });
-
-  const editForm = useForm<UpdateUserFormData>({
-    resolver: zodResolver(updateUserSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      roleUuid: '',
-      isActive: true,
-    },
-  });
-
-  const currentForm = drawerMode === 'create' ? createForm : editForm;
 
   useEffect(() => {
     fetchUsers();
@@ -98,7 +88,7 @@ export default function UserList() {
   };
 
   const openCreateDrawer = () => {
-    createForm.reset({
+    form.reset({
       name: '',
       email: '',
       password: '',
@@ -113,7 +103,7 @@ export default function UserList() {
 
   const openEditDrawer = (user: User) => {
     setSelectedUser(user);
-    editForm.reset({
+    form.reset({
       name: user.name,
       email: user.email,
       password: '',
@@ -137,12 +127,18 @@ export default function UserList() {
     setSelectedUser(null);
   };
 
-  const handleSubmit = async (data: CreateUserFormData | UpdateUserFormData) => {
+  const handleSubmit = async (data: UserFormData) => {
+    // Custom validation for create mode
+    if (drawerMode === 'create' && (!data.password || data.password.length < 6)) {
+      form.setError('password', { message: 'Password minimal 6 karakter' });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       if (drawerMode === 'create') {
-        await userService.create(data as CreateUserFormData);
+        await userService.create(data);
         toast.success('User berhasil dibuat');
       } else if (drawerMode === 'edit' && selectedUser) {
         const updateData: any = { ...data };
@@ -314,102 +310,123 @@ export default function UserList() {
           onOpenChange={setDrawerOpen}
           title={drawerMode === 'create' ? 'Tambah User Baru' : 'Edit User'}
           description={drawerMode === 'create' ? 'Isi form di bawah untuk membuat user baru.' : 'Ubah data user sesuai kebutuhan.'}
-          onSubmit={currentForm.handleSubmit(handleSubmit)}
+          onSubmit={form.handleSubmit(handleSubmit)}
           submitLabel={drawerMode === 'create' ? 'Simpan' : 'Update'}
           loading={submitting}
         >
-          <div className="space-y-2">
-            <Label htmlFor="name">Nama <span className="text-destructive">*</span></Label>
-            <Input
-              id="name"
-              placeholder="Masukkan nama"
-              {...currentForm.register('name')}
-              disabled={submitting}
-            />
-            {currentForm.formState.errors.name && (
-              <p className="text-xs text-destructive">{currentForm.formState.errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Masukkan email"
-              {...currentForm.register('email')}
-              disabled={submitting}
-            />
-            {currentForm.formState.errors.email && (
-              <p className="text-xs text-destructive">{currentForm.formState.errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">
-              Password {drawerMode === 'create' && <span className="text-destructive">*</span>}
-              {drawerMode === 'edit' && <span className="text-muted-foreground text-xs">(kosongkan jika tidak ingin mengubah)</span>}
-            </Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder={drawerMode === 'edit' ? '••••••••' : 'Masukkan password'}
-                {...currentForm.register('password')}
-                disabled={submitting}
+          <Form {...form}>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nama <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="Masukkan nama" {...field} disabled={submitting} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-            {currentForm.formState.errors.password && (
-              <p className="text-xs text-destructive">{currentForm.formState.errors.password.message}</p>
-            )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="role">Role <span className="text-destructive">*</span></Label>
-            <Select
-              value={currentForm.watch('roleUuid')}
-              onValueChange={(value) => currentForm.setValue('roleUuid', value)}
-              disabled={submitting}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih role" />
-              </SelectTrigger>
-              <SelectContent>
-                {roles.map((role) => (
-                  <SelectItem key={role.uuid} value={role.uuid}>
-                    {role.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {currentForm.formState.errors.roleUuid && (
-              <p className="text-xs text-destructive">{currentForm.formState.errors.roleUuid.message}</p>
-            )}
-          </div>
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Masukkan email" {...field} disabled={submitting} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="isActive">Status Aktif</Label>
-              <p className="text-xs text-muted-foreground">
-                User aktif dapat login ke sistem
-              </p>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Password {drawerMode === 'create' && <span className="text-destructive">*</span>}
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          type={showPassword ? 'text' : 'password'} 
+                          placeholder={drawerMode === 'edit' ? '••••••••' : 'Masukkan password'} 
+                          {...field} 
+                          disabled={submitting} 
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    {drawerMode === 'edit' && (
+                      <FormDescription>Kosongkan jika tidak ingin mengubah password</FormDescription>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="roleUuid"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role <span className="text-destructive">*</span></FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={submitting}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role.uuid} value={role.uuid}>
+                            {role.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Status Aktif</FormLabel>
+                      <FormDescription>
+                        User aktif dapat login ke sistem
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={submitting}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </div>
-            <Switch
-              id="isActive"
-              checked={currentForm.watch('isActive')}
-              onCheckedChange={(checked) => currentForm.setValue('isActive', checked)}
-              disabled={submitting}
-            />
-          </div>
+          </Form>
         </FormSheet>
       )}
 
