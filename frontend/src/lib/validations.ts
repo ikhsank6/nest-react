@@ -1,73 +1,72 @@
-import { z } from 'zod';
+import { z } from "zod"
 
-// Login Schema
-export const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Email harus diisi')
-    .email('Format email tidak valid'),
-  password: z
-    .string()
-    .min(1, 'Password harus diisi')
-    .min(6, 'Password minimal 6 karakter'),
-});
-
-export type LoginFormData = z.infer<typeof loginSchema>;
-
-// Register Schema
-export const registerSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Nama harus diisi')
-    .min(2, 'Nama minimal 2 karakter'),
-  email: z
-    .string()
-    .min(1, 'Email harus diisi')
-    .email('Format email tidak valid'),
-  password: z
-    .string()
-    .min(1, 'Password harus diisi')
-    .min(6, 'Password minimal 6 karakter'),
-  confirmPassword: z
-    .string()
-    .min(1, 'Konfirmasi password harus diisi'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Password tidak cocok',
-  path: ['confirmPassword'],
-});
-
-export type RegisterFormData = z.infer<typeof registerSchema>;
-
-// Forgot Password Schema
-export const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Email harus diisi')
-    .email('Format email tidak valid'),
-});
-
-export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
-
-// User Schema
-export const userSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Nama harus diisi')
-    .min(2, 'Nama minimal 2 karakter'),
-  email: z
-    .string()
-    .min(1, 'Email harus diisi')
-    .email('Format email tidak valid'),
-  password: z
-    .string()
-    .optional()
-    .refine((val) => !val || val.length >= 6, {
-      message: 'Password minimal 6 karakter',
-    }),
-  roleId: z
-    .number()
-    .min(1, 'Role harus dipilih'),
+// User schemas
+export const createUserSchema = z.object({
+  name: z.string().min(1, "Nama harus diisi").max(100, "Nama maksimal 100 karakter"),
+  email: z.string().min(1, "Email harus diisi").email("Format email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter").max(50, "Password maksimal 50 karakter"),
+  roleUuid: z.string().min(1, "Role harus dipilih").uuid("Role tidak valid"),
   isActive: z.boolean().default(true),
-});
+})
 
-export type UserFormData = z.infer<typeof userSchema>;
+export const updateUserSchema = z.object({
+  name: z.string().min(1, "Nama harus diisi").max(100, "Nama maksimal 100 karakter"),
+  email: z.string().min(1, "Email harus diisi").email("Format email tidak valid"),
+  password: z.string().max(50, "Password maksimal 50 karakter").optional().or(z.literal("")),
+  roleUuid: z.string().min(1, "Role harus dipilih").uuid("Role tidak valid"),
+  isActive: z.boolean().default(true),
+})
+
+export type CreateUserFormData = z.infer<typeof createUserSchema>
+export type UpdateUserFormData = z.infer<typeof updateUserSchema>
+
+// Role schemas
+export const createRoleSchema = z.object({
+  name: z.string().min(1, "Nama role harus diisi").max(50, "Nama maksimal 50 karakter"),
+  description: z.string().max(255, "Deskripsi maksimal 255 karakter").optional().or(z.literal("")),
+  isActive: z.boolean().default(true),
+})
+
+export const updateRoleSchema = createRoleSchema
+
+export type CreateRoleFormData = z.infer<typeof createRoleSchema>
+export type UpdateRoleFormData = z.infer<typeof updateRoleSchema>
+
+// Menu schemas
+export const createMenuSchema = z.object({
+  name: z.string().min(1, "Nama menu harus diisi").max(50, "Nama maksimal 50 karakter"),
+  path: z.string().max(100, "Path maksimal 100 karakter").optional().or(z.literal("")),
+  icon: z.string().max(50, "Icon maksimal 50 karakter").optional().or(z.literal("")),
+  order: z.number().int().min(0, "Order minimal 0").default(0),
+  isActive: z.boolean().default(true),
+  parentUuid: z.string().uuid("Parent menu tidak valid").optional().nullable(),
+})
+
+export const updateMenuSchema = createMenuSchema
+
+export type CreateMenuFormData = z.infer<typeof createMenuSchema>
+export type UpdateMenuFormData = z.infer<typeof updateMenuSchema>
+
+// Auth schemas
+export const loginSchema = z.object({
+  email: z.string().min(1, "Email harus diisi").email("Format email tidak valid"),
+  password: z.string().min(1, "Password harus diisi"),
+})
+
+export const registerSchema = z.object({
+  name: z.string().min(1, "Nama harus diisi").max(100, "Nama maksimal 100 karakter"),
+  email: z.string().min(1, "Email harus diisi").email("Format email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter").max(50, "Password maksimal 50 karakter"),
+  confirmPassword: z.string().min(1, "Konfirmasi password harus diisi"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Password tidak sama",
+  path: ["confirmPassword"],
+})
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().min(1, "Email harus diisi").email("Format email tidak valid"),
+})
+
+export type LoginFormData = z.infer<typeof loginSchema>
+export type RegisterFormData = z.infer<typeof registerSchema>
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
