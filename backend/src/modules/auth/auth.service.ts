@@ -42,8 +42,10 @@ export class AuthService {
 
     const payload = { 
       sub: user.id, 
+      uuid: user.uuid,
       email: user.email, 
       name: user.name,
+      avatar: (user as any).avatar,
       role: user.role 
     };
     const accessToken = this.jwtService.sign(payload);
@@ -63,6 +65,7 @@ export class AuthService {
           uuid: user.uuid,
           email: user.email,
           name: user.name,
+          avatar: (user as any).avatar || null,
           isActive: user.isActive,
           verifiedAt: user.verifiedAt,
           createdAt: user.createdAt,

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNotificationDto, NotificationType } from './dto';
+import { NotificationResource } from './resources/notification.resource';
 
 @Injectable()
 export class NotificationsService {
@@ -20,7 +21,7 @@ export class NotificationsService {
 
     return {
       message: 'Notifikasi berhasil dibuat.',
-      data: this.sanitizeNotification(notification),
+      data: new NotificationResource(notification),
     };
   }
 
@@ -53,7 +54,7 @@ export class NotificationsService {
       this.prisma.notification.count({ where }),
     ]);
 
-    const sanitized = notifications.map((n) => this.sanitizeNotification(n));
+    const sanitized = NotificationResource.collection(notifications);
 
     return {
       message: 'Success',
@@ -140,18 +141,4 @@ export class NotificationsService {
     };
   }
 
-  private sanitizeNotification(notification: any) {
-    return {
-      uuid: notification.uuid,
-      toRoleId: notification.toRoleId,
-      fromUserId: notification.fromUserId,
-      message: notification.message,
-      detailUrl: notification.detailUrl,
-      referenceId: notification.referenceId,
-      type: notification.type,
-      isRead: notification.isRead,
-      readAt: notification.readAt,
-      createdAt: notification.createdAt,
-    };
-  }
 }

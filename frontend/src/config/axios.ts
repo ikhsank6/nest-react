@@ -28,6 +28,15 @@ api.interceptors.request.use(
 // Response interceptor - handle errors
 api.interceptors.response.use(
   (response) => {
+    // Return if data is Blob
+      if (response.data instanceof Blob) return response
+
+      // Return if data is base64
+      if (
+        typeof response.data === 'string' &&
+        response.headers['content-type'] === 'application/pdf'
+      )
+        return response.data
     // Return the full response data, let services handle extraction
     return response.data;
   },

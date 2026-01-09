@@ -7,50 +7,86 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  private readonly extendedClient: any;
+
+  constructor() {
+    super();
+    this.extendedClient = this.$extends({
+      query: {
+        $allModels: {
+          async create({ args, query }) {
+            const context = getRequestContext();
+            const userName = context?.userName || 'System';
+            args.data = {
+              ...args.data,
+              createdBy: (args.data as any).createdBy || userName,
+              updatedBy: (args.data as any).updatedBy || userName,
+            };
+            return query(args);
+          },
+          async createMany({ args, query }) {
+            const context = getRequestContext();
+            const userName = context?.userName || 'System';
+            if (Array.isArray(args.data)) {
+              args.data = args.data.map((item: any) => ({
+                ...item,
+                createdBy: item.createdBy || userName,
+                updatedBy: item.updatedBy || userName,
+              }));
+            }
+            return query(args);
+          },
+          async update({ args, query }) {
+            const context = getRequestContext();
+            const userName = context?.userName || 'System';
+            if ((args.data as any).deletedAt) {
+              (args.data as any).deletedBy = userName;
+            } else {
+              (args.data as any).updatedBy = userName;
+            }
+            return query(args);
+          },
+          async updateMany({ args, query }) {
+            const context = getRequestContext();
+            const userName = context?.userName || 'System';
+            if ((args.data as any).deletedAt) {
+              (args.data as any).deletedBy = userName;
+            } else {
+              (args.data as any).updatedBy = userName;
+            }
+            return query(args);
+          },
+          async upsert({ args, query }) {
+            const context = getRequestContext();
+            const userName = context?.userName || 'System';
+            args.create = {
+              ...args.create,
+              createdBy: (args.create as any).createdBy || userName,
+              updatedBy: (args.create as any).updatedBy || userName,
+            };
+            args.update = {
+              ...args.update,
+              updatedBy: (args.update as any).updatedBy || userName,
+            };
+            return query(args);
+          },
+        },
+      },
+    });
+
+    // Proxy calls to the extended client to maintain compatibility with existing services
+    return new Proxy(this, {
+      get: (target, prop, receiver) => {
+        if (prop in target.extendedClient) {
+          return target.extendedClient[prop];
+        }
+        return Reflect.get(target, prop, receiver);
+      },
+    }) as any;
+  }
+
   async onModuleInit() {
     await this.$connect();
-
-    // Global Audit Middleware
-    (this as any).$use(async (params, next) => {
-      const context = getRequestContext();
-      const userName = context?.userName || 'System';
-
-      if (params.action === 'create') {
-        params.args.data = {
-          ...params.args.data,
-          createdBy: params.args.data.createdBy || userName,
-          updatedBy: params.args.data.updatedBy || userName,
-        };
-      } else if (params.action === 'createMany') {
-        if (Array.isArray(params.args.data)) {
-          params.args.data = params.args.data.map((item) => ({
-            ...item,
-            createdBy: item.createdBy || userName,
-            updatedBy: item.updatedBy || userName,
-          }));
-        }
-      } else if (params.action === 'update' || params.action === 'updateMany') {
-        if (params.args.data.deletedAt) {
-          // Soft delete detection
-          params.args.data.deletedBy = userName;
-        } else {
-          // Regular update
-          params.args.data.updatedBy = userName;
-        }
-      } else if (params.action === 'upsert') {
-        params.args.create = {
-          ...params.args.create,
-          createdBy: params.args.create.createdBy || userName,
-          updatedBy: params.args.create.updatedBy || userName,
-        };
-        params.args.update = {
-          ...params.args.update,
-          updatedBy: params.args.update.updatedBy || userName,
-        };
-      }
-
-      return next(params);
-    });
   }
 
   async onModuleDestroy() {

@@ -2,21 +2,13 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { hashPassword } from '../../common/utils/hash.util';
-import { excludeFields } from '../../common/utils/sanitize.util';
 import { buildPaginatedResponse, calculateSkip } from '../../common/utils/pagination.util';
 import { QueueService } from '../queue/queue.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/dto';
 import { v4 as uuidv4 } from 'uuid';
+import { UserResource } from './resources/user.resource';
 
-// Sanitize user object - remove id, password, and roleId; sanitize nested role
-function sanitizeUser(user: any) {
-  const { id, password, roleId, verificationToken, role, ...rest } = user;
-  return {
-    ...rest,
-    role: role ? excludeFields(role, ['id', 'deletedAt']) : null,
-  };
-}
 
 @Injectable()
 export class UsersService {
@@ -50,7 +42,7 @@ export class UsersService {
     ]);
 
     return buildPaginatedResponse(
-      users.map(sanitizeUser),
+      UserResource.collection(users),
       total,
       page,
       limit,
@@ -67,7 +59,7 @@ export class UsersService {
       throw new NotFoundException('User tidak ditemukan.');
     }
 
-    return { message: 'Success', data: sanitizeUser(user) };
+    return { message: 'Success', data: new UserResource(user) };
   }
 
   async findById(id: number) {
@@ -80,7 +72,7 @@ export class UsersService {
       throw new NotFoundException('User tidak ditemukan.');
     }
 
-    return { message: 'Success', data: sanitizeUser(user) };
+    return { message: 'Success', data: new UserResource(user) };
   }
 
   async create(createUserDto: CreateUserDto, currentUserId?: number) {
@@ -163,7 +155,7 @@ export class UsersService {
       message: isActive 
         ? 'User berhasil dibuat.' 
         : 'User berhasil dibuat. Email verifikasi telah dikirim.', 
-      data: sanitizeUser(user) 
+      data: new UserResource(user) 
     };
   }
 
@@ -214,7 +206,7 @@ export class UsersService {
       include: { role: true },
     });
 
-    return { message: 'User berhasil diupdate.', data: sanitizeUser(user) };
+    return { message: 'User berhasil diupdate.', data: new UserResource(user) };
   }
 
   async remove(uuid: string) {

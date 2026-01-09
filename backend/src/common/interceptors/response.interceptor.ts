@@ -3,6 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  StreamableFile,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -36,9 +37,31 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<ApiResponse<T>> {
+  ): Observable<any> {
+    const http = context.switchToHttp();
+    const request = http.getRequest();
+
+    // Bypass interceptor for avatar images to ensure binary data is not corrupted
+    if (request.url.includes('/profile/avatar/')) {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       map((result) => {
+        const httpResponse = context.switchToHttp().getResponse();
+        const contentType = httpResponse.getHeader('content-type');
+
+        // Don't format StreamableFile, Buffer, or if Content-Type is already an image/file
+        if (
+          result instanceof StreamableFile || 
+          result instanceof Buffer || 
+          (contentType && (contentType.toString().includes('image/') || contentType.toString().includes('application/octet-stream'))) ||
+          result?.constructor?.name === 'StreamableFile' ||
+          (result && typeof result === 'object' && ('getStream' in result || 'stream' in result))
+        ) {
+          return result;
+        }
+
         const message = result?.message || null;
         let responseData = result?.data !== undefined ? result.data : result;
         let pageMeta: PaginationMeta | undefined;

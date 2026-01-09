@@ -1,25 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
-import { excludeFields } from '../../common/utils/sanitize.util';
 import { buildPaginatedResponse, calculateSkip } from '../../common/utils/pagination.util';
+import { RoleResource } from './resources/role.resource';
 
-// Sanitize role object - remove id and deletedAt
-function sanitizeRole(role: any) {
-  const { id, deletedAt, menuAccess, ...rest } = role;
-  return {
-    ...rest,
-    ...(menuAccess && {
-      menuAccess: menuAccess.map((access: any) => {
-        const { id: accessId, roleId, menuId, menu, ...accessRest } = access;
-        return {
-          ...accessRest,
-          menu: menu ? excludeFields(menu, ['id', 'parentId', 'deletedAt']) : null,
-        };
-      }),
-    }),
-  };
-}
 
 @Injectable()
 export class RolesService {
@@ -47,7 +31,7 @@ export class RolesService {
     ]);
 
     return buildPaginatedResponse(
-      roles.map((role) => excludeFields(role, ['id', 'deletedAt'])),
+      RoleResource.collection(roles),
       total,
       page,
       limit,
@@ -64,7 +48,7 @@ export class RolesService {
       throw new NotFoundException('Role tidak ditemukan.');
     }
 
-    return { message: 'Success', data: sanitizeRole(role) };
+    return { message: 'Success', data: new RoleResource(role) };
   }
 
   async create(createRoleDto: CreateRoleDto) {
@@ -77,7 +61,7 @@ export class RolesService {
     }
 
     const role = await this.prisma.role.create({ data: createRoleDto });
-    return { message: 'Role berhasil dibuat.', data: excludeFields(role, ['id', 'deletedAt']) };
+    return { message: 'Role berhasil dibuat.', data: new RoleResource(role) };
   }
 
   async update(uuid: string, updateRoleDto: UpdateRoleDto) {
@@ -103,7 +87,7 @@ export class RolesService {
       data: updateRoleDto,
     });
 
-    return { message: 'Role berhasil diupdate.', data: excludeFields(role, ['id', 'deletedAt']) };
+    return { message: 'Role berhasil diupdate.', data: new RoleResource(role) };
   }
 
   async remove(uuid: string) {

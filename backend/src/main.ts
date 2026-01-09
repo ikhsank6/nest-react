@@ -16,11 +16,6 @@ async function bootstrap() {
   
   const logger = app.get(LoggerService);
 
-  // Serve static files from public folder
-  app.useStaticAssets(join(__dirname, '..', 'public'), {
-    prefix: '/public/',
-  });
-
   // Enable CORS
   app.enableCors({
     origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:5173'],
@@ -31,8 +26,19 @@ async function bootstrap() {
     optionsSuccessStatus: 200,
   });
 
-  // Global prefix
-  app.setGlobalPrefix('api');
+  // Global prefix (exclude static asset paths)
+  app.setGlobalPrefix('api', {
+    exclude: ['/uploads/(.*)', '/public/(.*)'],
+  });
+
+  // Serve static files (AFTER global prefix to avoid conflicts)
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/public/',
+  });
+
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   // Global pipes
   app.useGlobalPipes(new ValidationPipe());

@@ -4,6 +4,7 @@ export interface User {
   uuid: string;
   name: string;
   email: string;
+  avatar: string | null;
   isActive: boolean;
   verifiedAt: string | null;
   createdAt: string;

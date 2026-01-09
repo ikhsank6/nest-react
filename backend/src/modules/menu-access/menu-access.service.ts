@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateMenuAccessDto, UpdateMenuAccessDto, BulkMenuAccessDto } from './dto/menu-access.dto';
+import { MenuAccessResource } from './resources/menu-access.resource';
 
 @Injectable()
 export class MenuAccessService {
@@ -18,7 +19,7 @@ export class MenuAccessService {
       orderBy: { menu: { order: 'asc' } },
     });
 
-    return { message: 'Success', data: menuAccess };
+    return { message: 'Success', data: MenuAccessResource.collection(menuAccess) };
   }
 
   async getAccessibleMenus(roleId: number) {
@@ -90,7 +91,7 @@ export class MenuAccessService {
       include: { menu: true, role: true },
     });
 
-    return { message: 'Menu access berhasil dibuat.', data: menuAccess };
+    return { message: 'Menu access berhasil dibuat.', data: new MenuAccessResource(menuAccess) };
   }
 
   async update(uuid: string, updateMenuAccessDto: UpdateMenuAccessDto) {
@@ -108,10 +109,10 @@ export class MenuAccessService {
         data: { menuId: menu.id },
         include: { menu: true, role: true },
       });
-      return { message: 'Menu access berhasil diupdate.', data: menuAccess };
+      return { message: 'Menu access berhasil diupdate.', data: new MenuAccessResource(menuAccess) };
     }
 
-    return { message: 'Menu access berhasil diupdate.', data: existing };
+    return { message: 'Menu access berhasil diupdate.', data: new MenuAccessResource(existing) };
   }
 
   async bulkUpdate(bulkDto: BulkMenuAccessDto) {

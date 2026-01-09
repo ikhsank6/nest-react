@@ -57,9 +57,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuthStore, type AuthMenu } from "@/stores/auth.store"
 import { authService } from "@/services/auth.service"
+import { profileService } from "@/services/profile.service"
 
 const iconMap: Record<string, React.ComponentType<any>> = {
   LayoutDashboard,
@@ -76,6 +77,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navigate = useNavigate()
   const { isMobile } = useSidebar()
   const [showLogoutDialog, setShowLogoutDialog] = React.useState(false)
+  const [avatarBlobUrl, setAvatarBlobUrl] = React.useState<string | undefined>(undefined)
+
+  // Fetch avatar with auth token using profileService
+  React.useEffect(() => {
+    let isMounted = true;
+    let currentBlobUrl: string | null = null;
+    
+    const fetchAvatar = async () => {
+      if (!user?.avatar || !user?.uuid) {
+        setAvatarBlobUrl(undefined);
+        return;
+      }
+
+      const blobUrl = await profileService.getAvatarBlob(user.uuid);
+      if (isMounted && blobUrl) {
+        currentBlobUrl = blobUrl;
+        setAvatarBlobUrl(blobUrl);
+      }
+    };
+
+    fetchAvatar();
+
+    return () => {
+      isMounted = false;
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
+      }
+    };
+  }, [user?.avatar, user?.uuid]);
 
   const handleLogout = () => {
     authService.logout()
@@ -173,6 +203,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={user?.avatar ? avatarBlobUrl : undefined} alt={user?.name} />
                     <AvatarFallback className="rounded-lg">{user?.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
@@ -191,6 +222,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarImage src={user?.avatar ? avatarBlobUrl : undefined} alt={user?.name} />
                       <AvatarFallback className="rounded-lg">{user?.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
@@ -208,15 +240,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate('/profile')}>
                     <BadgeCheck className="mr-2 size-4" />
-                    Account
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings2 className="mr-2 size-4" />
+                    Settings
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <CreditCard className="mr-2 size-4" />
                     Billing
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate('/notifications')}>
                     <Bell className="mr-2 size-4" />
                     Notifications
                   </DropdownMenuItem>

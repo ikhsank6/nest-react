@@ -1,14 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateMenuDto, UpdateMenuDto, ReorderMenusDto } from './dto/menu.dto';
-import { excludeFieldsDeep } from '../../common/utils/sanitize.util';
+import { MenuResource } from './resources/menu.resource';
 
-// Sanitize menu using the reusable utility
-const sanitizeMenu = (menu: any) => excludeFieldsDeep(
-  menu,
-  ['id', 'parentId', 'deletedAt'],
-  ['children', 'parent']
-);
 
 @Injectable()
 export class MenusService {
@@ -59,7 +53,7 @@ export class MenusService {
       }
     }
 
-    return { message: 'Success', data: sortedMenus.map(sanitizeMenu) };
+    return { message: 'Success', data: MenuResource.collection(sortedMenus) };
   }
 
   async getTree() {
@@ -86,7 +80,7 @@ export class MenusService {
       orderBy: { order: 'asc' },
     });
 
-    return { message: 'Success', data: menus.map(sanitizeMenu) };
+    return { message: 'Success', data: MenuResource.collection(menus) };
   }
 
   async findOne(uuid: string) {
@@ -102,7 +96,7 @@ export class MenusService {
       throw new NotFoundException('Menu tidak ditemukan.');
     }
 
-    return { message: 'Success', data: sanitizeMenu(menu) };
+    return { message: 'Success', data: new MenuResource(menu) };
   }
 
   async create(createMenuDto: CreateMenuDto) {
@@ -119,7 +113,7 @@ export class MenusService {
         data: { ...dataWithoutParentUuid, parentId: parent.id },
         include: { parent: true },
       });
-      return { message: 'Menu berhasil dibuat.', data: sanitizeMenu(menu) };
+      return { message: 'Menu berhasil dibuat.', data: new MenuResource(menu) };
     }
 
     const { parentUuid, ...data } = createMenuDto;
@@ -127,7 +121,7 @@ export class MenusService {
       data,
       include: { parent: true },
     });
-    return { message: 'Menu berhasil dibuat.', data: sanitizeMenu(menu) };
+    return { message: 'Menu berhasil dibuat.', data: new MenuResource(menu) };
   }
 
   async update(uuid: string, updateMenuDto: UpdateMenuDto) {
@@ -167,7 +161,7 @@ export class MenusService {
       include: { parent: true },
     });
 
-    return { message: 'Menu berhasil diupdate.', data: sanitizeMenu(menu) };
+    return { message: 'Menu berhasil diupdate.', data: new MenuResource(menu) };
   }
 
   async remove(uuid: string) {
@@ -241,7 +235,7 @@ export class MenusService {
         results.push(updatedMenu);
       }
 
-      return { message: 'Menu berhasil di-reorder.', data: results.map(sanitizeMenu) };
+      return { message: 'Menu berhasil di-reorder.', data: MenuResource.collection(results) };
     });
   }
 }
