@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { Camera, Lock, Mail, User as UserIcon, Loader2, CheckCircle2, X } from 'lucide-react';
+import { Camera, Lock, Mail, User as UserIcon, Loader2, CheckCircle2, X, Eye, EyeOff } from 'lucide-react';
+import { PasswordStrengthMeter } from '@/components/ui/password-strength-meter';
 import { profileService } from '@/services/profile.service';
 import { useAuthStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
@@ -21,8 +22,13 @@ const profileSchema = z.object({
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Password saat ini harus diisi'),
-  newPassword: z.string().min(8, 'Password baru minimal 8 karakter'),
-  confirmPassword: z.string().min(8, 'Konfirmasi password minimal 8 karakter'),
+  newPassword: z.string().min(12, "Password minimal 12 karakter")
+    .max(50, "Password maksimal 50 karakter")
+    .regex(/[A-Z]/, "Password harus mengandung minimal 1 huruf besar")
+    .regex(/[a-z]/, "Password harus mengandung minimal 1 huruf kecil")
+    .regex(/[0-9]/, "Password harus mengandung minimal 1 angka")
+    .regex(/[^A-Za-z0-9]/, "Password harus mengandung minimal 1 karakter spesial"),
+  confirmPassword: z.string().min(1, 'Konfirmasi password harus diisi'),
 }).refine((data: any) => data.newPassword === data.confirmPassword, {
   message: 'Konfirmasi password tidak cocok',
   path: ['confirmPassword'],
@@ -37,6 +43,9 @@ export default function Profile() {
   };
   const [isLoading, setIsLoading] = useState(false);
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const profileForm = useForm<z.infer<typeof profileSchema>>({
@@ -50,6 +59,8 @@ export default function Profile() {
   const passwordForm = useForm<z.infer<typeof passwordSchema>>({
     resolver: zodResolver(passwordSchema),
   });
+
+  const newPasswordValue = passwordForm.watch('newPassword');
 
   useEffect(() => {
     if (user) {
@@ -289,10 +300,17 @@ export default function Profile() {
                         <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="currentPassword"
-                          type="password"
-                          className="pl-10"
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          className="pl-10 pr-10"
                           {...passwordForm.register('currentPassword')}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                       </div>
                       {passwordForm.formState.errors.currentPassword && (
                         <p className="text-xs text-destructive">{passwordForm.formState.errors.currentPassword.message}</p>
@@ -304,11 +322,19 @@ export default function Profile() {
                         <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="newPassword"
-                          type="password"
-                          className="pl-10"
+                          type={showNewPassword ? 'text' : 'password'}
+                          className="pl-10 pr-10"
                           {...passwordForm.register('newPassword')}
                         />
+                         <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                       </div>
+                      <PasswordStrengthMeter password={newPasswordValue || ''} />
                       {passwordForm.formState.errors.newPassword && (
                         <p className="text-xs text-destructive">{passwordForm.formState.errors.newPassword.message}</p>
                       )}
@@ -319,10 +345,17 @@ export default function Profile() {
                         <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="confirmPassword"
-                          type="password"
-                          className="pl-10"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          className="pl-10 pr-10"
                           {...passwordForm.register('confirmPassword')}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                       </div>
                       {passwordForm.formState.errors.confirmPassword && (
                         <p className="text-xs text-destructive">{passwordForm.formState.errors.confirmPassword.message}</p>
