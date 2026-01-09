@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
+import { PasswordStrengthMeter } from '@/components/ui/password-strength-meter';
+
 export default function Register() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -35,6 +37,8 @@ export default function Register() {
       confirmPassword: '',
     },
   });
+
+  const passwordValue = form.watch('password');
 
   const onSubmit = async (data: RegisterFormData) => {
     setLoading(true);
@@ -187,6 +191,7 @@ export default function Register() {
                       </button>
                     </div>
                   </FormControl>
+                  <PasswordStrengthMeter password={passwordValue} />
                   <FormMessage />
                 </FormItem>
               )}

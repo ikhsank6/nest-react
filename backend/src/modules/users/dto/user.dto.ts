@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsEmail, IsOptional, IsInt, IsBoolean, MinLength, IsUUID, IsString } from 'class-validator';
+import { IsNotEmpty, IsEmail, IsOptional, IsInt, IsBoolean, MinLength, IsUUID, IsString, Matches } from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty({ message: 'nama harus diisi.' })
@@ -9,7 +9,10 @@ export class CreateUserDto {
   email: string;
 
   @IsNotEmpty({ message: 'password harus diisi.' })
-  @MinLength(6, { message: 'password minimal 6 karakter.' })
+  @MinLength(12, { message: 'password minimal 12 karakter.' })
+  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+    message: 'password terlalu lemah. gunakan kombinasi huruf besar, huruf kecil, angka, dan karakter spesial.',
+  })
   password: string;
 
   @IsOptional()
@@ -35,7 +38,10 @@ export class UpdateUserDto {
   email?: string;
 
   @IsOptional()
-  @MinLength(6, { message: 'password minimal 6 karakter.' })
+  @MinLength(12, { message: 'password minimal 12 karakter.' })
+  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+    message: 'password terlalu lemah. gunakan kombinasi huruf besar, huruf kecil, angka, dan karakter spesial.',
+  })
   password?: string;
 
   @IsOptional()

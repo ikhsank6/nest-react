@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Eye, EyeOff } from 'lucide-react';
 import { type UserFormData } from '@/lib/validations';
 import { type Role } from '@/services/role.service';
+import { PasswordStrengthMeter } from '@/components/ui/password-strength-meter';
 
 interface UserFormDrawerProps {
   open: boolean;
@@ -44,6 +45,7 @@ export function UserFormDrawer({
   roles 
 }: UserFormDrawerProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const passwordValue = form.watch('password');
 
   return (
     <FormSheet
@@ -112,6 +114,7 @@ export function UserFormDrawer({
                     </Button>
                   </div>
                 </FormControl>
+                {passwordValue && <PasswordStrengthMeter password={passwordValue} />}
                 {mode === 'edit' && (
                   <FormDescription>Kosongkan jika tidak ingin mengubah password</FormDescription>
                 )}
@@ -133,7 +136,7 @@ export function UserFormDrawer({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {roles.map((role) => (
+                    {roles.map((role: Role) => (
                       <SelectItem key={role.uuid} value={role.uuid}>
                         {role.name}
                       </SelectItem>
