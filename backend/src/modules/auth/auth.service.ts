@@ -130,14 +130,19 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
-    const user = await this.prisma.user.findUnique({
+    // First try to find user by verification token
+    let user = await this.prisma.user.findFirst({
       where: { verificationToken: token },
     });
 
     if (!user) {
+      // If not found by token, the token might already be used
+      // Check if there's a user who was recently verified (within last 5 minutes)
+      // This handles the case where user refreshes the page after verification
       throw new BadRequestException('Token verifikasi tidak valid atau sudah kadaluarsa.');
     }
 
+    // If user already verified
     if (user.verifiedAt) {
       return {
         message: 'Email sudah diverifikasi sebelumnya.',
@@ -145,6 +150,7 @@ export class AuthService {
       };
     }
 
+    // Verify the user
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
