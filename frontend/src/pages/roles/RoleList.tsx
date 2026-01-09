@@ -12,6 +12,7 @@ import { RoleViewDrawer } from '@/components/roles/RoleViewDrawer';
 import { RoleFormDrawer } from '@/components/roles/RoleFormDrawer';
 import { MenuAccessDrawer } from '@/components/roles/MenuAccessDrawer';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
+import { formatDate } from '@/lib/utils';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -167,7 +168,7 @@ export default function RoleList() {
       header: 'Created At',
       cell: (role) => (
         <span className="text-muted-foreground">
-          {new Date(role.createdAt).toLocaleDateString()}
+          {formatDate(role.createdAt)}
         </span>
       ),
     },

@@ -1,5 +1,6 @@
 import { ViewSheet, FieldDisplay } from '@/components/ui/form-sheet';
 import { type Role } from '@/services/role.service';
+import { formatDate } from '@/lib/utils';
 
 interface RoleViewDrawerProps {
   open: boolean;
@@ -21,8 +22,8 @@ export function RoleViewDrawer({ open, onOpenChange, role, onEdit }: RoleViewDra
     >
       <FieldDisplay label="Nama Role" value={role.name} />
       <FieldDisplay label="Deskripsi" value={role.description || '-'} />
-      <FieldDisplay label="Dibuat Pada" value={new Date(role.createdAt).toLocaleString()} />
-      <FieldDisplay label="Terakhir Update" value={new Date(role.updatedAt).toLocaleString()} />
+      <FieldDisplay label="Dibuat Pada" value={formatDate(role.createdAt)} />
+      <FieldDisplay label="Terakhir Update" value={formatDate(role.updatedAt)} />
     </ViewSheet>
   );
 }

@@ -1,5 +1,6 @@
 import { ViewSheet, FieldDisplay } from '@/components/ui/form-sheet';
 import { type User } from '@/services/user.service';
+import { formatDate } from '@/lib/utils';
 
 interface UserViewDrawerProps {
   open: boolean;
@@ -31,8 +32,8 @@ export function UserViewDrawer({ open, onOpenChange, user, onEdit }: UserViewDra
           </div>
         } 
       />
-      <FieldDisplay label="Dibuat Pada" value={new Date(user.createdAt).toLocaleString()} />
-      <FieldDisplay label="Terakhir Update" value={new Date(user.updatedAt).toLocaleString()} />
+      <FieldDisplay label="Dibuat Pada" value={formatDate(user.createdAt)} />
+      <FieldDisplay label="Terakhir Update" value={formatDate(user.updatedAt)} />
     </ViewSheet>
   );
 }

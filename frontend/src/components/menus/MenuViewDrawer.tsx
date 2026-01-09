@@ -1,5 +1,6 @@
 import { ViewSheet, FieldDisplay } from '@/components/ui/form-sheet';
 import { type Menu } from '@/services/menu.service';
+import { formatDate } from '@/lib/utils';
 
 interface MenuViewDrawerProps {
   open: boolean;
@@ -36,8 +37,8 @@ export function MenuViewDrawer({ open, onOpenChange, menu, onEdit }: MenuViewDra
           </div>
         } 
       />
-      <FieldDisplay label="Dibuat Pada" value={new Date(menu.createdAt).toLocaleString()} />
-      <FieldDisplay label="Terakhir Update" value={new Date(menu.updatedAt).toLocaleString()} />
+      <FieldDisplay label="Dibuat Pada" value={formatDate(menu.createdAt)} />
+      <FieldDisplay label="Terakhir Update" value={formatDate(menu.updatedAt)} />
     </ViewSheet>
   );
 }

@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -233,7 +234,7 @@ export default function UserList() {
             </TooltipTrigger>
             <TooltipContent>
               {user.verifiedAt 
-                ? `Terverifikasi: ${new Date(user.verifiedAt).toLocaleString()}`
+                ? `Terverifikasi: ${formatDateTime(user.verifiedAt)}`
                 : 'Email belum diverifikasi'
               }
             </TooltipContent>
@@ -246,7 +247,7 @@ export default function UserList() {
       header: 'Created At',
       cell: (user) => (
         <span className="text-muted-foreground">
-          {new Date(user.createdAt).toLocaleDateString()}
+          {formatDate(user.createdAt)}
         </span>
       ),
     },

@@ -642,6 +642,17 @@ export function DataTable<T>({
                                 tooltip="Hapus Data"
                               />
                             )}
+                            {actions.customActions?.filter(action => !action.showCondition || action.showCondition(item)).map((action, idx) => (
+                              <ActionButton
+                                key={idx}
+                                variant="secondary"
+                                size="sm"
+                                className={cn("h-8 w-8 p-0 rounded-full hover:text-foreground hover:bg-muted", action.className)}
+                                onClick={() => action.onClick(item)}
+                                icon={action.icon === 'Lock' ? <Lock className="h-4 w-4" /> : action.icon}
+                                tooltip={action.label}
+                              />
+                            ))}
                           </div>
                         )}
                       </div>
@@ -701,6 +712,17 @@ export function DataTable<T>({
                             tooltip="Hapus Data"
                           />
                         )}
+                        {actions.customActions?.filter(action => !action.showCondition || action.showCondition(item)).map((action, idx) => (
+                          <ActionButton
+                            key={idx}
+                            variant="secondary"
+                            size="sm"
+                            className={cn("h-8 w-8 p-0 rounded-full hover:text-foreground hover:bg-muted", action.className)}
+                            onClick={() => action.onClick(item)}
+                            icon={action.icon === 'Lock' ? <Lock className="h-4 w-4" /> : action.icon}
+                            tooltip={action.label}
+                          />
+                        ))}
                       </div>
                     )}
                   </div>
