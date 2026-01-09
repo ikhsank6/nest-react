@@ -63,7 +63,7 @@ export class EmailService {
     return date.toLocaleDateString('id-ID', options);
   }
 
-  async sendVerificationEmail(email: string, name: string, verificationToken: string, createdAt?: Date): Promise<boolean> {
+  async sendVerificationEmail(email: string, name: string, verificationToken: string, createdAt?: Date, temporaryPassword?: string): Promise<boolean> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:8080');
     const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
     const appName = this.configService.get<string>('APP_NAME', 'NestReact App');
@@ -105,7 +105,7 @@ export class EmailService {
                     
                     <!-- Description -->
                     <p style="margin: 0 0 32px; color: #6b7280; font-size: 15px; line-height: 1.6;">
-                      Terima kasih telah mendaftar. Silakan klik tombol di bawah untuk memverifikasi alamat email Anda.
+                      Akun Anda telah berhasil dibuat. Silakan klik tombol di bawah untuk memverifikasi alamat email Anda dan mengaktifkan akun.
                     </p>
                     
                     <!-- Account Info Box -->
@@ -131,6 +131,16 @@ export class EmailService {
                               <td style="padding: 12px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">${email}</td>
                             </tr>
                           </table>
+
+                          ${temporaryPassword ? `
+                          <!-- Password Row -->
+                          <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom: 1px solid #f3f4f6;">
+                            <tr>
+                              <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Password Sementara</td>
+                              <td style="padding: 12px 0; color: #ef4444; font-size: 14px; font-weight: 600; text-align: right;">${temporaryPassword}</td>
+                            </tr>
+                          </table>
+                          ` : ''}
                           
                           <!-- Registration Date Row -->
                           <table width="100%" cellpadding="0" cellspacing="0">
@@ -142,6 +152,12 @@ export class EmailService {
                         </td>
                       </tr>
                     </table>
+
+                    ${temporaryPassword ? `
+                    <p style="margin: 0 0 32px; color: #ef4444; font-size: 13px; line-height: 1.6; text-align: center; font-style: italic;">
+                      *Disarankan untuk segera mengubah password Anda setelah login pertama kali.
+                    </p>
+                    ` : ''}
                     
                     <!-- Expiry Notice -->
                     <p style="margin: 0 0 20px; color: #9ca3af; font-size: 13px; text-align: center;">

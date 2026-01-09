@@ -100,8 +100,19 @@ export class UsersService {
       throw new BadRequestException('roleId atau roleUuid harus diisi.');
     }
 
-    const hashedPassword = await hashPassword(createUserDto.password);
-    const isActive = createUserDto.isActive ?? true;
+    const isActive = createUserDto.isActive ?? false;
+    let temporaryPassword: string | undefined = undefined;
+    let passwordToHash = createUserDto.password;
+
+    if (!passwordToHash) {
+      // Generate random 12-character password
+      temporaryPassword = Math.random().toString(36).slice(-8) + 
+                          Math.random().toString(36).toUpperCase().slice(-2) + 
+                          "@1"; // Simple safe generation for example
+      passwordToHash = temporaryPassword;
+    }
+
+    const hashedPassword = await hashPassword(passwordToHash);
     
     // Generate verification token if user is not active
     const verificationToken = !isActive ? uuidv4() : null;
@@ -127,6 +138,7 @@ export class UsersService {
         name: user.name,
         verificationToken,
         createdAt: user.createdAt.toISOString(),
+        temporaryPassword, // Pass the raw password here to be sent in email
       });
     }
 

@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
+import { type UseFormReturn } from 'react-hook-form';
 import { FormSheet } from '@/components/ui/form-sheet';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -19,11 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Eye, EyeOff } from 'lucide-react';
 import { type UserFormData } from '@/lib/validations';
 import { type Role } from '@/services/role.service';
-import { PasswordStrengthMeter } from '@/components/ui/password-strength-meter';
 
 interface UserFormDrawerProps {
   open: boolean;
@@ -44,8 +40,6 @@ export function UserFormDrawer({
   loading,
   roles 
 }: UserFormDrawerProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const passwordValue = form.watch('password');
 
   return (
     <FormSheet
@@ -82,41 +76,10 @@ export function UserFormDrawer({
                 <FormControl>
                   <Input type="email" placeholder="Masukkan email" {...field} disabled={loading} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Password {mode === 'create' && <span className="text-destructive">*</span>}
-                </FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input 
-                      type={showPassword ? 'text' : 'password'} 
-                      placeholder={mode === 'edit' ? '••••••••' : 'Masukkan password'} 
-                      {...field} 
-                      disabled={loading} 
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </FormControl>
-                {passwordValue && <PasswordStrengthMeter password={passwordValue} />}
-                {mode === 'edit' && (
-                  <FormDescription>Kosongkan jika tidak ingin mengubah password</FormDescription>
+                {mode === 'create' && (
+                  <FormDescription>
+                    Password sementara akan digenerate otomatis dan dikirim melalui email.
+                  </FormDescription>
                 )}
                 <FormMessage />
               </FormItem>

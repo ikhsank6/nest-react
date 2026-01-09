@@ -8,7 +8,9 @@ export const userFormSchema = z.object({
     .regex(/[A-Z]/, "Password harus mengandung minimal 1 huruf besar")
     .regex(/[a-z]/, "Password harus mengandung minimal 1 huruf kecil")
     .regex(/[0-9]/, "Password harus mengandung minimal 1 angka")
-    .regex(/[^A-Za-z0-9]/, "Password harus mengandung minimal 1 karakter spesial"),
+    .regex(/[^A-Za-z0-9]/, "Password harus mengandung minimal 1 karakter spesial")
+    .optional()
+    .or(z.literal("")),
   roleUuid: z.string().min(1, "Role harus dipilih"),
   isActive: z.boolean(),
 })

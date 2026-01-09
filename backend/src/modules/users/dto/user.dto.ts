@@ -8,7 +8,7 @@ export class CreateUserDto {
   @IsEmail({}, { message: 'format email tidak valid.' })
   email: string;
 
-  @IsNotEmpty({ message: 'password harus diisi.' })
+  @IsOptional()
   @MinLength(12, { message: 'password minimal 12 karakter.' })
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
     message: 'password terlalu lemah. gunakan kombinasi huruf besar, huruf kecil, angka, dan karakter spesial.',

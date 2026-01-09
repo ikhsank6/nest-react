@@ -9,6 +9,7 @@ export interface VerificationEmailJob {
   name: string;
   verificationToken: string;
   createdAt?: string;
+  temporaryPassword?: string;
 }
 
 @Processor('email')
@@ -28,6 +29,7 @@ export class EmailProcessor {
         job.data.name,
         job.data.verificationToken,
         createdAt,
+        job.data.temporaryPassword,
       );
       this.logger.log(`Verification email sent successfully to: ${job.data.email}`);
     } catch (error) {

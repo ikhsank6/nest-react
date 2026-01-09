@@ -59,9 +59,8 @@ export default function UserList() {
     defaultValues: {
       name: '',
       email: '',
-      password: '',
       roleUuid: '',
-      isActive: true,
+      isActive: false,
     },
   });
 
@@ -100,9 +99,8 @@ export default function UserList() {
     form.reset({
       name: '',
       email: '',
-      password: '',
       roleUuid: '',
-      isActive: true,
+      isActive: false,
     });
     setSelectedUser(null);
     setDrawerMode('create');
@@ -135,24 +133,19 @@ export default function UserList() {
   };
 
   const handleSubmit = async (data: UserFormData) => {
-    // Custom validation for create mode
-    if (drawerMode === 'create' && (!data.password || data.password.length < 6)) {
-      form.setError('password', { message: 'Password minimal 6 karakter' });
-      return;
-    }
-
     setSubmitting(true);
 
     try {
+      const submitData: any = { ...data };
+      if (!submitData.password) {
+        delete submitData.password;
+      }
+
       if (drawerMode === 'create') {
-        await userService.create(data);
+        await userService.create(submitData);
         toast.success(data.isActive ? 'User berhasil dibuat' : 'User berhasil dibuat. Email verifikasi telah dikirim.');
       } else if (drawerMode === 'edit' && selectedUser) {
-        const updateData: any = { ...data };
-        if (!updateData.password) {
-          delete updateData.password;
-        }
-        await userService.update(selectedUser.uuid, updateData);
+        await userService.update(selectedUser.uuid, submitData);
         toast.success('User berhasil diupdate');
       }
       
@@ -222,11 +215,13 @@ export default function UserList() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 cursor-help">
-                <div className={`h-2 w-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                <span className="text-sm">{user.isActive ? 'Active' : 'Inactive'}</span>
+              <div className="flex flex-col items-start gap-1 cursor-help">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className={`h-2 w-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                  <span className="text-sm font-medium">{user.isActive ? 'Active' : 'Inactive'}</span>
+                </div>
                 {!user.verifiedAt && (
-                  <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/50 bg-amber-500/10">
+                  <Badge variant="outline" className="text-[10px] h-5 py-0 px-2 text-amber-500 border-amber-500/50 bg-amber-500/10 whitespace-nowrap">
                     Belum Verifikasi
                   </Badge>
                 )}

@@ -22,7 +22,7 @@ export interface User {
 export interface CreateUserData {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   roleUuid: string;
   isActive?: boolean;
 }
