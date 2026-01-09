@@ -51,7 +51,7 @@ export class RolesService {
     return { message: 'Success', data: new RoleResource(role) };
   }
 
-  async create(createRoleDto: CreateRoleDto) {
+  async create(createRoleDto: CreateRoleDto, currentUserId?: number) {
     const existingRole = await this.prisma.role.findFirst({
       where: { name: createRoleDto.name, deletedAt: null },
     });
@@ -60,11 +60,16 @@ export class RolesService {
       throw new BadRequestException('Nama role sudah ada.');
     }
 
-    const role = await this.prisma.role.create({ data: createRoleDto });
+    const role = await this.prisma.role.create({ 
+      data: {
+        ...createRoleDto,
+        createdBy: currentUserId?.toString(),
+      } 
+    });
     return { message: 'Role berhasil dibuat.', data: new RoleResource(role) };
   }
 
-  async update(uuid: string, updateRoleDto: UpdateRoleDto) {
+  async update(uuid: string, updateRoleDto: UpdateRoleDto, currentUserId?: number) {
     const existing = await this.prisma.role.findFirst({
       where: { uuid, deletedAt: null },
     });
@@ -84,7 +89,10 @@ export class RolesService {
 
     const role = await this.prisma.role.update({
       where: { id: existing.id },
-      data: updateRoleDto,
+      data: {
+        ...updateRoleDto,
+        updatedBy: currentUserId?.toString(),
+      },
     });
 
     return { message: 'Role berhasil diupdate.', data: new RoleResource(role) };

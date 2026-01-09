@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
@@ -33,8 +33,9 @@ export class RolesController {
   @HttpCode(200)
   @Roles('Admin')
   @ApiOperation({ summary: 'Create new role' })
-  async create(@Body() createRoleDto: CreateRoleDto) {
-    return this.rolesService.create(createRoleDto);
+  async create(@Body() createRoleDto: CreateRoleDto, @Request() req: any) {
+    const currentUserId = req.user?.id;
+    return this.rolesService.create(createRoleDto, currentUserId);
   }
 
   @Put(':uuid')
@@ -44,8 +45,10 @@ export class RolesController {
   async update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateRoleDto: UpdateRoleDto,
+    @Request() req: any,
   ) {
-    return this.rolesService.update(uuid, updateRoleDto);
+    const currentUserId = req.user?.id;
+    return this.rolesService.update(uuid, updateRoleDto, currentUserId);
   }
 
   @Delete(':uuid')

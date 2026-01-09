@@ -119,22 +119,8 @@ async function main() {
     },
   });
 
-  const menuAccessMenu = await prisma.menu.upsert({
-    where: { id: 6 },
-    update: {},
-    create: {
-      name: 'Menu Access',
-      path: '/menu-access',
-      icon: 'Lock',
-      parentId: masterMenu.id,
-      order: 4,
-      createdBy: 'System',
-      updatedBy: 'System',
-    },
-  });
-
   // Create menu access for admin
-  const menus = [dashboardMenu, masterMenu, usersMenu, rolesMenu, menusMenu, menuAccessMenu];
+  const menus = [dashboardMenu, masterMenu, usersMenu, rolesMenu, menusMenu];
   for (const menu of menus) {
     await prisma.menuAccess.upsert({
       where: {

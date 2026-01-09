@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, HttpCode, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { MenusService } from './menus.service';
 import { CreateMenuDto, UpdateMenuDto, ReorderMenusDto } from './dto/menu.dto';
@@ -40,8 +40,9 @@ export class MenusController {
   @HttpCode(200)
   @Roles('Admin')
   @ApiOperation({ summary: 'Create new menu' })
-  async create(@Body() createMenuDto: CreateMenuDto) {
-    return this.menusService.create(createMenuDto);
+  async create(@Body() createMenuDto: CreateMenuDto, @Request() req: any) {
+    const currentUserId = req.user?.id;
+    return this.menusService.create(createMenuDto, currentUserId);
   }
 
   @Post('reorder')
@@ -59,8 +60,10 @@ export class MenusController {
   async update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateMenuDto: UpdateMenuDto,
+    @Request() req: any,
   ) {
-    return this.menusService.update(uuid, updateMenuDto);
+    const currentUserId = req.user?.id;
+    return this.menusService.update(uuid, updateMenuDto, currentUserId);
   }
 
   @Delete(':uuid')

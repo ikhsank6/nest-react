@@ -12,7 +12,7 @@ import { RoleViewDrawer } from '@/components/roles/RoleViewDrawer';
 import { RoleFormDrawer } from '@/components/roles/RoleFormDrawer';
 import { MenuAccessDrawer } from '@/components/roles/MenuAccessDrawer';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
-import { formatDate } from '@/lib/utils';
+import { AuditInfo } from '@/components/ui/audit-info';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -167,9 +167,10 @@ export default function RoleList() {
       key: 'createdAt',
       header: 'Created At',
       cell: (role) => (
-        <span className="text-muted-foreground">
-          {formatDate(role.createdAt)}
-        </span>
+        <AuditInfo 
+          createdAt={role.createdAt} 
+          createdBy={role.createdBy} 
+        />
       ),
     },
   ];

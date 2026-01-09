@@ -12,6 +12,7 @@ import { MenuViewDrawer } from '@/components/menus/MenuViewDrawer';
 import { MenuFormDrawer } from '@/components/menus/MenuFormDrawer';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
 import { Badge } from '@/components/ui/badge';
+import { AuditInfo } from '@/components/ui/audit-info';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -253,6 +254,16 @@ export default function MenuList() {
         <Badge variant={menu.isActive ? 'default' : 'secondary'} className={menu.isActive ? 'bg-green-500 hover:bg-green-600' : ''}>
           {menu.isActive ? 'Active' : 'Inactive'}
         </Badge>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Created At',
+      cell: (menu) => (
+        <AuditInfo 
+          createdAt={menu.createdAt} 
+          createdBy={menu.createdBy} 
+        />
       ),
     },
   ];

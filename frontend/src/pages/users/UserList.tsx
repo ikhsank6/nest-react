@@ -19,7 +19,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
+import { AuditInfo } from '@/components/ui/audit-info';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -241,9 +242,10 @@ export default function UserList() {
       key: 'createdAt',
       header: 'Created At',
       cell: (user) => (
-        <span className="text-muted-foreground">
-          {formatDate(user.createdAt)}
-        </span>
+        <AuditInfo 
+          createdAt={user.createdAt} 
+          createdBy={user.createdBy} 
+        />
       ),
     },
   ];
