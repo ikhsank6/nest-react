@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, UseGuards, Request, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, ForgotPasswordDto } from './dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResendVerificationDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 
 @ApiTags('Authentication')
@@ -38,11 +38,28 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(200)
-  @ApiOperation({ summary: 'User registration', description: 'Register a new user account (auto-assigned User role)' })
-  @ApiResponse({ status: 201, description: 'Registration successful' })
+  @ApiOperation({ summary: 'User registration', description: 'Register a new user account (auto-assigned User role). A verification email will be sent.' })
+  @ApiResponse({ status: 201, description: 'Registration successful. Verification email sent.' })
   @ApiResponse({ status: 400, description: 'Email already exists or validation error' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Get('verify-email')
+  @ApiOperation({ summary: 'Verify email', description: 'Verify user email address using the token sent via email' })
+  @ApiQuery({ name: 'token', required: true, description: 'Verification token from email' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Resend verification email', description: 'Resend verification email to user' })
+  @ApiResponse({ status: 200, description: 'Verification email sent (if email exists and not verified)' })
+  async resendVerification(@Body() resendVerificationDto: ResendVerificationDto) {
+    return this.authService.resendVerificationEmail(resendVerificationDto.email);
   }
 
   @Post('forgot-password')
@@ -63,4 +80,3 @@ export class AuthController {
     return this.authService.getProfile(req.user.sub);
   }
 }
-

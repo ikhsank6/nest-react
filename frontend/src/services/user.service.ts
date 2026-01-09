@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   isActive: boolean;
+  verifiedAt: string | null;
   createdAt: string;
   updatedAt: string;
   role: {
@@ -71,4 +72,10 @@ export const userService = {
   delete: async (uuid: string) => {
     return api.delete(`/users/${uuid}`);
   },
+
+  resendVerification: async (uuid: string) => {
+    const response = await api.post(`/users/${uuid}/resend-verification`) as any;
+    return response;
+  },
 };
+

@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto } from './dto';
 import { hashPassword, comparePassword } from '../../common/utils/hash.util';
 import { MenuAccessService } from '../menu-access/menu-access.service';
+import { QueueService } from '../queue/queue.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +13,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private menuAccessService: MenuAccessService,
+    private queueService: QueueService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -27,6 +30,10 @@ export class AuthService {
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email atau password salah.');
+    }
+
+    if (!user.verifiedAt) {
+      throw new UnauthorizedException('Email belum diverifikasi. Silakan cek email Anda.');
     }
 
     if (!user.isActive) {
@@ -52,6 +59,7 @@ export class AuthService {
           email: user.email,
           name: user.name,
           isActive: user.isActive,
+          verifiedAt: user.verifiedAt,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           role: user.role ? {
@@ -83,6 +91,7 @@ export class AuthService {
     }
 
     const hashedPassword = await hashPassword(registerDto.password);
+    const verificationToken = uuidv4();
 
     const user = await this.prisma.user.create({
       data: {
@@ -90,12 +99,22 @@ export class AuthService {
         email: registerDto.email,
         password: hashedPassword,
         roleId: defaultRole.id,
+        isActive: false, // User is inactive until email is verified
+        verificationToken,
       },
       include: { role: true },
     });
 
+    // Queue verification email
+    await this.queueService.addVerificationEmailJob({
+      email: user.email,
+      name: user.name,
+      verificationToken,
+      createdAt: user.createdAt.toISOString(),
+    });
+
     return {
-      message: 'Registrasi berhasil',
+      message: 'Registrasi berhasil. Silakan cek email Anda untuk verifikasi.',
       data: {
         user: {
           uuid: user.uuid,
@@ -107,6 +126,76 @@ export class AuthService {
           } : null,
         },
       },
+    };
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { verificationToken: token },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Token verifikasi tidak valid atau sudah kadaluarsa.');
+    }
+
+    if (user.verifiedAt) {
+      return {
+        message: 'Email sudah diverifikasi sebelumnya.',
+        data: {},
+      };
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verifiedAt: new Date(),
+        isActive: true,
+        verificationToken: null, // Clear the token after verification
+      },
+    });
+
+    return {
+      message: 'Email berhasil diverifikasi. Anda sekarang dapat login.',
+      data: {},
+    };
+  }
+
+  async resendVerificationEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Return success even if email not found for security
+      return {
+        message: 'Jika email terdaftar, link verifikasi telah dikirim.',
+        data: {},
+      };
+    }
+
+    if (user.verifiedAt) {
+      throw new BadRequestException('Email sudah diverifikasi.');
+    }
+
+    // Generate new verification token
+    const verificationToken = uuidv4();
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken },
+    });
+
+    // Queue verification email
+    await this.queueService.addVerificationEmailJob({
+      email: user.email,
+      name: user.name,
+      verificationToken,
+      createdAt: user.createdAt.toISOString(),
+    });
+
+    return {
+      message: 'Link verifikasi telah dikirim ke email Anda.',
+      data: {},
     };
   }
 
@@ -162,6 +251,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         isActive: user.isActive,
+        verifiedAt: user.verifiedAt,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         role: user.role ? {
@@ -172,4 +262,3 @@ export class AuthService {
     };
   }
 }
-

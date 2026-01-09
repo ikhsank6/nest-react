@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/auth.service';
 import { registerSchema, type RegisterFormData } from '@/lib/validations';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Mail, Lock, User, Loader2, LayoutDashboard } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Loader2, LayoutDashboard, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,6 +23,8 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -43,14 +45,63 @@ export default function Register() {
         password: data.password,
         roleId: 2 // Default role: User
       });
-      toast.success('Registrasi berhasil');
-      navigate('/login');
+      setRegisteredEmail(data.email);
+      setRegistrationSuccess(true);
+      toast.success('Registrasi berhasil! Silakan cek email Anda.');
     } catch (error) {
       // Error handled by axios interceptor
     } finally {
       setLoading(false);
     }
   };
+
+  // Show success message after registration
+  if (registrationSuccess) {
+    return (
+      <Card className="border-none shadow-2xl bg-card/50 backdrop-blur-xl">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-bold tracking-tight">Registrasi Berhasil!</CardTitle>
+          <CardDescription className="text-base">
+            Kami telah mengirim link verifikasi ke email Anda
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-muted/50 rounded-lg text-center">
+            <p className="text-sm text-muted-foreground mb-2">Email dikirim ke:</p>
+            <p className="font-medium text-foreground">{registeredEmail}</p>
+          </div>
+          <div className="text-sm text-muted-foreground text-center space-y-2">
+            <p>Silakan buka email Anda dan klik link verifikasi untuk mengaktifkan akun.</p>
+            <p className="text-xs">Tidak menerima email? Periksa folder spam Anda.</p>
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4 text-center">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate('/login')}
+          >
+            Kembali ke Login
+          </Button>
+          <button 
+            type="button"
+            onClick={() => {
+              setRegistrationSuccess(false);
+              form.reset();
+            }}
+            className="text-sm text-primary hover:underline"
+          >
+            Daftar dengan email lain
+          </button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-none shadow-2xl bg-card/50 backdrop-blur-xl">

@@ -59,5 +59,17 @@ export class UsersController {
   async remove(@Param('uuid', ParseUUIDPipe) uuid: string) {
     return this.usersService.remove(uuid);
   }
+
+  @Post(':uuid/resend-verification')
+  @HttpCode(200)
+  @Roles('Admin')
+  @ApiOperation({ summary: 'Resend verification email to user' })
+  @ApiParam({ name: 'uuid', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  @ApiResponse({ status: 400, description: 'User already verified' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async resendVerification(@Param('uuid', ParseUUIDPipe) uuid: string) {
+    return this.usersService.resendVerificationEmail(uuid);
+  }
 }
 

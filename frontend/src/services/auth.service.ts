@@ -37,6 +37,16 @@ export const authService = {
     return api.post('/auth/register', data);
   },
 
+  verifyEmail: async (token: string) => {
+    const response = await api.get(`/auth/verify-email?token=${token}`) as any;
+    return response;
+  },
+
+  resendVerification: async (email: string) => {
+    const response = await api.post('/auth/resend-verification', { email }) as any;
+    return response;
+  },
+
   forgotPassword: async (email: string) => {
     return api.post('/auth/forgot-password', { email });
   },
@@ -67,3 +77,4 @@ export const authService = {
     return cookieUtils.getToken();
   },
 };
+

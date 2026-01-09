@@ -72,6 +72,7 @@ export interface TableActions<T> {
     icon: any // Can be Lucide icon name or component
     variant?: "default" | "secondary" | "destructive" | "ghost"
     className?: string
+    showCondition?: (item: T) => boolean
   }>
 }
 
@@ -426,7 +427,7 @@ export function DataTable<T>({
                                   tooltip="Hapus Data"
                                 />
                               )}
-                              {actions.customActions?.map((action, idx) => (
+                              {actions.customActions?.filter(action => !action.showCondition || action.showCondition(item)).map((action, idx) => (
                                 <ActionButton
                                   key={idx}
                                   variant={(action.variant as any) || "ghost"}
@@ -535,7 +536,7 @@ export function DataTable<T>({
                               tooltip="Hapus Data"
                             />
                           )}
-                          {actions.customActions?.map((action, idx) => (
+                          {actions.customActions?.filter(action => !action.showCondition || action.showCondition(item)).map((action, idx) => (
                             <ActionButton
                               key={idx}
                               variant={(action.variant as any) || "ghost"}

@@ -4,10 +4,12 @@ import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { hashPassword } from '../../common/utils/hash.util';
 import { excludeFields } from '../../common/utils/sanitize.util';
 import { buildPaginatedResponse, calculateSkip } from '../../common/utils/pagination.util';
+import { QueueService } from '../queue/queue.service';
+import { v4 as uuidv4 } from 'uuid';
 
 // Sanitize user object - remove id, password, and roleId; sanitize nested role
 function sanitizeUser(user: any) {
-  const { id, password, roleId, role, ...rest } = user;
+  const { id, password, roleId, verificationToken, role, ...rest } = user;
   return {
     ...rest,
     role: role ? excludeFields(role, ['id', 'deletedAt']) : null,
@@ -16,7 +18,10 @@ function sanitizeUser(user: any) {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private queueService: QueueService,
+  ) {}
 
   async findAll(page = 1, limit = 10, search?: string) {
     const skip = calculateSkip(page, limit);
@@ -101,6 +106,10 @@ export class UsersService {
     }
 
     const hashedPassword = await hashPassword(createUserDto.password);
+    const isActive = createUserDto.isActive ?? true;
+    
+    // Generate verification token if user is not active
+    const verificationToken = !isActive ? uuidv4() : null;
 
     const { roleUuid, ...dataWithoutRoleUuid } = createUserDto;
     const user = await this.prisma.user.create({
@@ -108,11 +117,30 @@ export class UsersService {
         ...dataWithoutRoleUuid,
         roleId,
         password: hashedPassword,
+        isActive,
+        // Only set verifiedAt if user is active
+        verifiedAt: isActive ? new Date() : null,
+        verificationToken,
       },
       include: { role: true },
     });
 
-    return { message: 'User berhasil dibuat.', data: sanitizeUser(user) };
+    // Send verification email if user is not active
+    if (!isActive && verificationToken) {
+      await this.queueService.addVerificationEmailJob({
+        email: user.email,
+        name: user.name,
+        verificationToken,
+        createdAt: user.createdAt.toISOString(),
+      });
+    }
+
+    return { 
+      message: isActive 
+        ? 'User berhasil dibuat.' 
+        : 'User berhasil dibuat. Email verifikasi telah dikirim.', 
+      data: sanitizeUser(user) 
+    };
   }
 
   async update(uuid: string, updateUserDto: UpdateUserDto) {
@@ -181,5 +209,40 @@ export class UsersService {
     });
 
     return { message: 'User berhasil dihapus.', data: {} };
+  }
+
+  async resendVerificationEmail(uuid: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { uuid, deletedAt: null },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User tidak ditemukan.');
+    }
+
+    if (user.verifiedAt) {
+      throw new BadRequestException('User sudah terverifikasi.');
+    }
+
+    // Generate new verification token
+    const verificationToken = uuidv4();
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken },
+    });
+
+    // Queue verification email
+    await this.queueService.addVerificationEmailJob({
+      email: user.email,
+      name: user.name,
+      verificationToken,
+      createdAt: user.createdAt.toISOString(),
+    });
+
+    return { 
+      message: 'Email verifikasi telah dikirim ulang.', 
+      data: {} 
+    };
   }
 }

@@ -6,13 +6,19 @@ import { roleService, type Role } from '@/services/role.service';
 import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { userFormSchema, type UserFormData } from '@/lib/validations';
 import { useTable } from '@/hooks/useTable';
 import { UserViewDrawer } from '@/components/users/UserViewDrawer';
 import { UserFormDrawer } from '@/components/users/UserFormDrawer';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -81,8 +87,9 @@ export default function UserList() {
 
   const fetchRoles = async () => {
     try {
-      const roles = await roleService.getAll();
-      setRoles(roles);
+      const response = await roleService.getAll();
+      // Extract the data array from the paginated response
+      setRoles(response?.data || []);
     } catch (error) {
       console.error('Failed to fetch roles:', error);
     }
@@ -138,7 +145,7 @@ export default function UserList() {
     try {
       if (drawerMode === 'create') {
         await userService.create(data);
-        toast.success('User berhasil dibuat');
+        toast.success(data.isActive ? 'User berhasil dibuat' : 'User berhasil dibuat. Email verifikasi telah dikirim.');
       } else if (drawerMode === 'edit' && selectedUser) {
         const updateData: any = { ...data };
         if (!updateData.password) {
@@ -177,6 +184,15 @@ export default function UserList() {
     setDeleteDialogOpen(true);
   };
 
+  const handleResendVerification = async (user: User) => {
+    try {
+      await userService.resendVerification(user.uuid);
+      toast.success(`Email verifikasi telah dikirim ke ${user.email}`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Gagal mengirim email verifikasi');
+    }
+  };
+
   // Table columns
   const columns: Column<User>[] = [
     {
@@ -202,10 +218,27 @@ export default function UserList() {
       key: 'status',
       header: 'Status',
       cell: (user) => (
-        <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-          <span className="text-sm">{user.isActive ? 'Active' : 'Inactive'}</span>
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 cursor-help">
+                <div className={`h-2 w-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                <span className="text-sm">{user.isActive ? 'Active' : 'Inactive'}</span>
+                {!user.verifiedAt && (
+                  <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/50 bg-amber-500/10">
+                    Belum Verifikasi
+                  </Badge>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {user.verifiedAt 
+                ? `Terverifikasi: ${new Date(user.verifiedAt).toLocaleString()}`
+                : 'Email belum diverifikasi'
+              }
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       ),
     },
     {
@@ -219,12 +252,23 @@ export default function UserList() {
     },
   ];
 
-  // Table actions
-  const tableActions: TableActions<User> = {
+  // Table actions with dynamic custom action for resend verification
+  const getTableActions = (): TableActions<User> => ({
     onView: openViewDrawer,
     onEdit: openEditDrawer,
     onDelete: confirmDelete,
-  };
+    customActions: [
+      {
+        label: 'Kirim Ulang Email Verifikasi',
+        onClick: handleResendVerification,
+        icon: <Mail className="h-4 w-4" />,
+        variant: 'ghost',
+        className: 'hover:text-blue-500',
+        // This will be handled by conditional rendering in the table
+        showCondition: (user: User) => !user.verifiedAt,
+      },
+    ],
+  });
 
   return (
     <div className="w-full">
@@ -240,7 +284,7 @@ export default function UserList() {
         }
         data={users}
         columns={columns}
-        actions={tableActions}
+        actions={getTableActions()}
         loading={loading}
         isError={error}
         onRefresh={handleRefresh}

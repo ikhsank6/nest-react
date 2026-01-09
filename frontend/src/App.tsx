@@ -6,6 +6,7 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
+import VerifyEmail from '@/pages/auth/VerifyEmail';
 import Dashboard from '@/pages/dashboard/Dashboard';
 import UserList from '@/pages/users/UserList';
 import RoleList from '@/pages/roles/RoleList';
@@ -67,6 +68,9 @@ export default function App() {
             <Route path="forgot-password" element={<ForgotPassword />} />
           </Route>
 
+          {/* Verify email - standalone route (no redirect if authenticated) */}
+          <Route path="/verify-email" element={<VerifyEmail />} />
+
           {/* Protected routes */}
           <Route
             path="/"
@@ -90,4 +94,5 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
 

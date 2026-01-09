@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/auth.service';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Mail, Lock, Loader2, LayoutDashboard } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Loader2, LayoutDashboard, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,11 +17,15 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [notVerified, setNotVerified] = useState(false);
+  const [notVerifiedEmail, setNotVerifiedEmail] = useState('');
+  const [resending, setResending] = useState(false);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -33,14 +37,33 @@ export default function Login() {
 
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
+    setNotVerified(false);
     try {
       await authService.login(data);
       toast.success('Login berhasil');
       navigate('/dashboard');
-    } catch (error) {
-      // Error handled by axios interceptor
+    } catch (error: any) {
+      const message = error?.response?.data?.message || '';
+      if (message.includes('belum diverifikasi') || message.includes('not verified')) {
+        setNotVerified(true);
+        setNotVerifiedEmail(data.email);
+      }
+      // Other errors handled by axios interceptor
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      await authService.resendVerification(notVerifiedEmail);
+      toast.success('Link verifikasi telah dikirim ke email Anda');
+      setNotVerified(false);
+    } catch (error) {
+      toast.error('Gagal mengirim ulang email verifikasi');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -57,7 +80,33 @@ export default function Login() {
           Enter your email to sign in to your account
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {notVerified && (
+          <Alert variant="destructive" className="bg-amber-500/10 border-amber-500/50 text-amber-600 dark:text-amber-400">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex flex-col gap-2">
+              <span>Email Anda belum diverifikasi. Silakan cek email untuk link verifikasi.</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="w-fit text-amber-600 border-amber-500/50 hover:bg-amber-500/10"
+              >
+                {resending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Mengirim...
+                  </>
+                ) : (
+                  'Kirim ulang email verifikasi'
+                )}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

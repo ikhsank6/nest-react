@@ -8,6 +8,8 @@ import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { MenusModule } from './modules/menus/menus.module';
 import { MenuAccessModule } from './modules/menu-access/menu-access.module';
+import { EmailModule } from './modules/email/email.module';
+import { QueueModule } from './modules/queue/queue.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { MenuAccessModule } from './modules/menu-access/menu-access.module';
     }),
     PrismaModule,
     LoggerModule,
+    EmailModule,
+    QueueModule,
     AuthModule,
     UsersModule,
     RolesModule,
@@ -24,3 +28,4 @@ import { MenuAccessModule } from './modules/menu-access/menu-access.module';
   ],
 })
 export class AppModule {}
+

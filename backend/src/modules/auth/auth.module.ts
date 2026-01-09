@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MenuAccessModule } from '../menu-access/menu-access.module';
+import { QueueModule } from '../queue/queue.module';
 
 @Module({
   imports: [
@@ -21,10 +22,12 @@ import { MenuAccessModule } from '../menu-access/menu-access.module';
       inject: [ConfigService],
     }),
     MenuAccessModule,
+    QueueModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}
+
 
