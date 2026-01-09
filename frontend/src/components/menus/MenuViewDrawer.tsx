@@ -38,7 +38,9 @@ export function MenuViewDrawer({ open, onOpenChange, menu, onEdit }: MenuViewDra
         } 
       />
       <FieldDisplay label="Dibuat Pada" value={formatDate(menu.createdAt)} />
+      <FieldDisplay label="Dibuat Oleh" value={menu.createdBy || '-'} />
       <FieldDisplay label="Terakhir Update" value={formatDate(menu.updatedAt)} />
+      <FieldDisplay label="Update Oleh" value={menu.updatedBy || '-'} />
     </ViewSheet>
   );
 }

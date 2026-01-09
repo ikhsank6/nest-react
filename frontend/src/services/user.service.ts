@@ -13,6 +13,9 @@ export interface User {
     name: string;
     description?: string;
   } | null;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  deletedBy?: string | null;
 }
 
 export interface CreateUserData {

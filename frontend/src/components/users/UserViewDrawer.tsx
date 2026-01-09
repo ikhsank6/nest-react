@@ -33,7 +33,9 @@ export function UserViewDrawer({ open, onOpenChange, user, onEdit }: UserViewDra
         } 
       />
       <FieldDisplay label="Dibuat Pada" value={formatDate(user.createdAt)} />
+      <FieldDisplay label="Dibuat Oleh" value={user.createdBy || '-'} />
       <FieldDisplay label="Terakhir Update" value={formatDate(user.updatedAt)} />
+      <FieldDisplay label="Update Oleh" value={user.updatedBy || '-'} />
     </ViewSheet>
   );
 }

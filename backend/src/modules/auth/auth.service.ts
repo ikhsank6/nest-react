@@ -40,7 +40,12 @@ export class AuthService {
       throw new UnauthorizedException('Akun tidak aktif.');
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { 
+      sub: user.id, 
+      email: user.email, 
+      name: user.name,
+      role: user.role 
+    };
     const accessToken = this.jwtService.sign(payload);
 
     // Get accessible menus for user's role

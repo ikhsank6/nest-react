@@ -7,6 +7,9 @@ export interface Role {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  deletedBy?: string | null;
 }
 
 export interface CreateRoleData {

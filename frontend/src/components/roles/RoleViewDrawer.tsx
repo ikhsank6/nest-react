@@ -23,7 +23,9 @@ export function RoleViewDrawer({ open, onOpenChange, role, onEdit }: RoleViewDra
       <FieldDisplay label="Nama Role" value={role.name} />
       <FieldDisplay label="Deskripsi" value={role.description || '-'} />
       <FieldDisplay label="Dibuat Pada" value={formatDate(role.createdAt)} />
+      <FieldDisplay label="Dibuat Oleh" value={role.createdBy || '-'} />
       <FieldDisplay label="Terakhir Update" value={formatDate(role.updatedAt)} />
+      <FieldDisplay label="Update Oleh" value={role.updatedBy || '-'} />
     </ViewSheet>
   );
 }

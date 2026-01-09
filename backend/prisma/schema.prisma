@@ -24,6 +24,9 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
+  createdBy         String?
+  updatedBy         String?
+  deletedBy         String?
 
   @@map("users")
 }
@@ -38,39 +41,48 @@ model Role {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   deletedAt   DateTime?
+  createdBy   String?
+  updatedBy   String?
+  deletedBy   String?
 
   @@map("roles")
 }
 
 model Menu {
-  id         Int          @id @default(autoincrement())
-  uuid       String       @unique @default(uuid())
-  name       String
-  path       String?
-  icon       String?
-  parentId   Int?
-  parent     Menu?        @relation("MenuHierarchy", fields: [parentId], references: [id])
-  children   Menu[]       @relation("MenuHierarchy")
-  order      Int          @default(0)
-  isActive   Boolean      @default(true)
-  menuAccess MenuAccess[]
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  deletedAt  DateTime?
+  id          Int          @id @default(autoincrement())
+  uuid        String       @unique @default(uuid())
+  name        String
+  path        String?
+  icon        String?
+  parentId    Int?
+  parent      Menu?        @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children    Menu[]       @relation("MenuHierarchy")
+  order       Int          @default(0)
+  isActive    Boolean      @default(true)
+  menuAccess  MenuAccess[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+  createdBy   String?
+  updatedBy   String?
+  deletedBy   String?
 
   @@map("menus")
 }
 
 model MenuAccess {
-  id        Int       @id @default(autoincrement())
-  uuid      String    @unique @default(uuid())
-  roleId    Int
-  menuId    Int
-  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  menu      Menu      @relation(fields: [menuId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  roleId      Int
+  menuId      Int
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu        Menu      @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  createdBy   String?
+  updatedBy   String?
+  deletedBy   String?
 
   @@unique([roleId, menuId])
   @@map("menu_access")
@@ -90,6 +102,9 @@ model Notification {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
+  createdBy   String?
+  updatedBy   String?
+  deletedBy   String?
 
   @@index([toRoleId])
   @@index([isRead])

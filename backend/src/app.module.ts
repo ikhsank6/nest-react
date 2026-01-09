@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { LoggerModule } from './logger/logger.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -11,6 +11,7 @@ import { MenuAccessModule } from './modules/menu-access/menu-access.module';
 import { EmailModule } from './modules/email/email.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 
 @Module({
   imports: [
@@ -27,6 +28,12 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     MenusModule,
     MenuAccessModule,
     NotificationsModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestContextInterceptor,
+    },
   ],
 })
 export class AppModule {}

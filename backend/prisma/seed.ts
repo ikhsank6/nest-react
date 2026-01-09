@@ -14,6 +14,8 @@ async function main() {
     create: {
       name: 'Admin',
       description: 'Administrator dengan akses penuh',
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -23,6 +25,8 @@ async function main() {
     create: {
       name: 'User',
       description: 'User biasa dengan akses terbatas',
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -33,6 +37,7 @@ async function main() {
     update: {
       isActive: true,
       verifiedAt: new Date(),
+      updatedBy: 'System',
     },
     create: {
       email: 'admin@example.com',
@@ -41,6 +46,8 @@ async function main() {
       roleId: adminRole.id,
       isActive: true,
       verifiedAt: new Date(),
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -53,6 +60,8 @@ async function main() {
       path: '/dashboard',
       icon: 'LayoutDashboard',
       order: 1,
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -63,6 +72,8 @@ async function main() {
       name: 'Master Data',
       icon: 'Database',
       order: 2,
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -75,6 +86,8 @@ async function main() {
       icon: 'Users',
       parentId: masterMenu.id,
       order: 1,
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -87,6 +100,8 @@ async function main() {
       icon: 'Shield',
       parentId: masterMenu.id,
       order: 2,
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -99,6 +114,8 @@ async function main() {
       icon: 'Menu',
       parentId: masterMenu.id,
       order: 3,
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -111,6 +128,8 @@ async function main() {
       icon: 'Lock',
       parentId: masterMenu.id,
       order: 4,
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 
@@ -128,6 +147,8 @@ async function main() {
       create: {
         roleId: adminRole.id,
         menuId: menu.id,
+        createdBy: 'System',
+        updatedBy: 'System',
       },
     });
   }
@@ -144,6 +165,8 @@ async function main() {
     create: {
       roleId: userRole.id,
       menuId: dashboardMenu.id,
+      createdBy: 'System',
+      updatedBy: 'System',
     },
   });
 

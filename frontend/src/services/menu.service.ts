@@ -11,6 +11,9 @@ export interface Menu {
   updatedAt: string;
   children?: Menu[];
   parent?: Menu | null;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  deletedBy?: string | null;
 }
 
 export const menuService = {
