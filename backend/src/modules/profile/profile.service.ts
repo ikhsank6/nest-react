@@ -3,6 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/profile.dto';
 import { hashPassword, comparePassword } from '../../common/utils/hash.util';
 import { UserResource } from '../users/resources/user.resource';
+import { join } from 'path';
+import { unlinkSync, existsSync } from 'fs';
 
 @Injectable()
 export class ProfileService {
@@ -58,6 +60,11 @@ export class ProfileService {
   }
 
   async updateAvatar(userId: number, avatarFilename: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (user && (user as any).avatar) {
+      this.deleteFileIfExists((user as any).avatar);
+    }
+
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { avatar: avatarFilename } as any,
@@ -65,6 +72,43 @@ export class ProfileService {
     });
 
     return { message: 'Avatar berhasil diperbarui.', data: new UserResource(updatedUser) };
+  }
+
+  async deleteAvatar(userId: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (user && (user as any).avatar) {
+      this.deleteFileIfExists((user as any).avatar);
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatar: null } as any,
+      include: { role: true },
+    });
+
+    return { message: 'Avatar berhasil dihapus.', data: new UserResource(updatedUser) };
+  }
+
+  async deleteAvatarByUuid(uuid: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { uuid },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User tidak ditemukan.');
+    }
+
+    if ((user as any).avatar) {
+      this.deleteFileIfExists((user as any).avatar);
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { uuid },
+      data: { avatar: null } as any,
+      include: { role: true },
+    });
+
+    return { message: 'Avatar berhasil dihapus.', data: new UserResource(updatedUser) };
   }
 
   async getAvatarByUuid(uuid: string): Promise<string> {
@@ -77,5 +121,22 @@ export class ProfileService {
     }
 
     return (user as any).avatar;
+  }
+
+  private deleteFileIfExists(avatarPath: string) {
+    // Determine the full file path. 
+    // If avatarPath starts with '/', treat it as relative to CWD, 
+    // otherwise look in uploads/avatars.
+    const filePath = avatarPath.startsWith('/')
+      ? join(process.cwd(), avatarPath)
+      : join(process.cwd(), 'uploads', 'avatars', avatarPath);
+
+    if (existsSync(filePath)) {
+      try {
+        unlinkSync(filePath);
+      } catch (error) {
+        console.error(`Failed to delete file at ${filePath}:`, error);
+      }
+    }
   }
 }

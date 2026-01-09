@@ -90,8 +90,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         return;
       }
 
-      const blobUrl = await profileService.getAvatarBlob(user.uuid);
-      if (isMounted && blobUrl) {
+      const blob = await profileService.getAvatarBlob(user.uuid);
+      if (isMounted && blob && blob instanceof Blob) {
+        const blobUrl = URL.createObjectURL(blob);
         currentBlobUrl = blobUrl;
         setAvatarBlobUrl(blobUrl);
       }

@@ -40,16 +40,21 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
   ): Observable<any> {
     const http = context.switchToHttp();
     const request = http.getRequest();
+    const expressResponse = http.getResponse();
 
-    // Bypass interceptor for avatar images to ensure binary data is not corrupted
-    if (request.url.includes('/profile/avatar/')) {
+    // Bypass ALL interceptor logic for binary streams
+    if (request.url?.includes('/profile/avatar/') || request.originalUrl?.includes('/profile/avatar/')) {
       return next.handle();
     }
 
     return next.handle().pipe(
       map((result) => {
-        const httpResponse = context.switchToHttp().getResponse();
-        const contentType = httpResponse.getHeader('content-type');
+        // If headers are already sent (e.g., by res.sendFile), stop processing entirely
+        if (expressResponse.headersSent) {
+          return result;
+        }
+
+        const contentType = expressResponse.getHeader('content-type');
 
         // Don't format StreamableFile, Buffer, or if Content-Type is already an image/file
         if (

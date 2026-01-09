@@ -38,18 +38,29 @@ export const profileService = {
     return response?.data;
   },
 
+  deleteAvatar: async (uuid?: string): Promise<User> => {
+    const url = uuid ? `/profile/avatar/${uuid}` : '/profile/avatar';
+    const response = await api.delete(url) as any;
+    return response?.data;
+  },
+
   /**
    * Get avatar as blob URL for secure image display
    * Uses axios interceptor for automatic auth token
    */
-  getAvatarBlob: async (uuid: string): Promise<string | null> => {
+  /**
+   * Get avatar as blob for secure image display
+   * Uses the format suggested by the user
+   */
+  getAvatarBlob: async (uuid: string): Promise<Blob | null> => {
     try {
-      const response = await api.get(`/profile/avatar/${uuid}`, {
+      const response = await api.get(`profile/avatar/${uuid}`, {
         responseType: 'blob',
+        timeout: 0,
       });
-      const blob = response as unknown as Blob;
-      return URL.createObjectURL(blob);
-    } catch {
+      return (response as any).data;
+    } catch (error) {
+      console.error(`[ProfileService] Failed to fetch avatar blob:`, error);
       return null;
     }
   },

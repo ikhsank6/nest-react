@@ -7,6 +7,9 @@ backend/dist/
 # Backend logs
 backend/logs/
 
+# Backend uploads
+backend/uploads/
+
 # TypeScript build info
 backend/*.tsbuildinfo
 

@@ -12,11 +12,12 @@ import {
   BadRequestException,
   NotFoundException,
   StreamableFile,
+  Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { createReadStream, existsSync } from 'fs';
+import { extname, join, basename } from 'path';
+import { createReadStream, existsSync, statSync } from 'fs';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { ProfileService } from './profile.service';
@@ -35,29 +36,51 @@ export class ProfileController {
   @Get('avatar/:uuid')
   async getAvatar(
     @Param('uuid') uuid: string,
-    @Res() res: Response,
-  ): Promise<void> {
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
     // Get avatar data (path or filename) from service
     const avatarData = await this.profileService.getAvatarByUuid(uuid);
-
-    // Support both old filename-only format and new full-path format
+    
+    // Determine the full file path. 
+    // If avatarData starts with '/', treat it as relative to CWD, 
+    // otherwise look in uploads/avatars.
     const filePath = avatarData.startsWith('/')
       ? join(process.cwd(), avatarData)
       : join(process.cwd(), 'uploads', 'avatars', avatarData);
-    
+
     if (!existsSync(filePath)) {
       throw new NotFoundException('Avatar tidak ditemukan');
     }
 
-    // Set Cache-Control to no-cache temporarily to fix disk cache issues
+    const stats = statSync(filePath);
+    const ext = extname(filePath).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+    };
+
+    const contentType = mimeTypes[ext] || 'image/jpeg';
+    const fileName = basename(filePath);
+
     res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400',
+      'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization, X-Requested-With, Application, Origin, Authorization, APIKey, Timestamp, AccessToken',
+      'Content-Disposition': `inline; filename="${fileName}"`,
+      'Pragma': 'public',
+      'Content-Transfer-Encoding': 'binary',
+      'Content-Type': contentType,
+      'Content-Length': stats.size.toString(),
       'X-Content-Type-Options': 'nosniff',
     });
 
-    // Send file directly using Express response object
-    // This bypasses NestJS global interceptors that might corrupt the binary data
-    res.sendFile(filePath);
+    const file = createReadStream(filePath);
+    return new StreamableFile(file);
   }
 
   @Post('update')
@@ -101,5 +124,15 @@ export class ProfileController {
     // Store the full path with the /uploads/avatars/ prefix
     const avatarPath = `/uploads/avatars/${file.filename}`;
     return this.profileService.updateAvatar(req.user.id, avatarPath);
+  }
+
+  @Delete('avatar')
+  deleteAvatar(@Request() req) {
+    return this.profileService.deleteAvatar(req.user.id);
+  }
+
+  @Delete('avatar/:uuid')
+  deleteAvatarByUuid(@Param('uuid') uuid: string) {
+    return this.profileService.deleteAvatarByUuid(uuid);
   }
 }
