@@ -43,6 +43,7 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   logout: () => void;
   hydrate: () => void;
+  hasMenuAccess: (path: string) => boolean;
 }
 
 // Custom storage that syncs with cookies
@@ -81,7 +82,7 @@ const cookieStorage = {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Initial state
       user: null,
       token: null,
@@ -130,6 +131,41 @@ export const useAuthStore = create<AuthState>()(
         } else {
           set({ isLoading: false });
         }
+      },
+
+      // Check if user has access to a specific path
+      hasMenuAccess: (path: string): boolean => {
+        const state = get();
+        const { menus, user } = state;
+        
+        // Admin has access to everything
+        if (user?.role?.name === 'Admin') {
+          return true;
+        }
+
+        // Dashboard is always accessible for authenticated users
+        if (path === '/dashboard' || path === '/') {
+          return true;
+        }
+
+        // Helper function to check path in menu tree
+        const checkMenuPath = (menuList: AuthMenu[]): boolean => {
+          for (const menu of menuList) {
+            // Check if menu path matches
+            if (menu.path && path.startsWith(menu.path)) {
+              return true;
+            }
+            // Check children
+            if (menu.children && menu.children.length > 0) {
+              if (checkMenuPath(menu.children)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        };
+
+        return checkMenuPath(menus);
       },
     }),
     {
