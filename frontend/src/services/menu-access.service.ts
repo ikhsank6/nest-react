@@ -4,29 +4,18 @@ import type { Role } from './role.service';
 
 export interface MenuAccess {
   id: number;
+  uuid: string;
   roleId: number;
   menuId: number;
   role?: Role;
   menu?: Menu;
-  canView: boolean;
-  canCreate: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface MenuAccessItemDto {
-  menuUuid: string;
-  canView?: boolean;
-  canCreate?: boolean;
-  canEdit?: boolean;
-  canDelete?: boolean;
-}
-
 export interface BulkMenuAccessDto {
   roleUuid: string;
-  menuAccess: MenuAccessItemDto[];
+  menuUuids: string[];
 }
 
 export const menuAccessService = {

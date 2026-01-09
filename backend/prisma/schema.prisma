@@ -68,10 +68,6 @@ model MenuAccess {
   menuId    Int
   role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
   menu      Menu      @relation(fields: [menuId], references: [id], onDelete: Cascade)
-  canView   Boolean   @default(true)
-  canCreate Boolean   @default(false)
-  canEdit   Boolean   @default(false)
-  canDelete Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?

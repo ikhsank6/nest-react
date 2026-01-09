@@ -24,6 +24,11 @@ export const menuService = {
     return response;
   },
 
+  getTree: async (): Promise<any> => {
+    const response = await api.get('/menus/akses') as any;
+    return response;
+  },
+
   getOne: async (uuid: string) => {
     const response = await api.get(`/menus/${uuid}`) as any;
     return response?.data;

@@ -13,6 +13,13 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class MenusController {
   constructor(private readonly menusService: MenusService) {}
 
+  @Get('akses')
+  @Roles('Admin')
+  @ApiOperation({ summary: 'Get all menus in nested tree format' })
+  async getTree() {
+    return this.menusService.getTree();
+  }
+
   @Get()
   @Roles('Admin')
   @ApiOperation({ summary: 'Get all menus with hierarchy' })

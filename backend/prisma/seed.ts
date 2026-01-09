@@ -128,10 +128,6 @@ async function main() {
       create: {
         roleId: adminRole.id,
         menuId: menu.id,
-        canView: true,
-        canCreate: true,
-        canEdit: true,
-        canDelete: true,
       },
     });
   }
@@ -148,10 +144,6 @@ async function main() {
     create: {
       roleId: userRole.id,
       menuId: dashboardMenu.id,
-      canView: true,
-      canCreate: false,
-      canEdit: false,
-      canDelete: false,
     },
   });
 

@@ -37,12 +37,10 @@ export class MenusService {
     });
 
     // Sort menus: parents first (by order), then their children (by order)
-    // Build a hierarchical flat list: parent -> children -> next parent -> children
     const sortedMenus: any[] = [];
     const rootMenus = menus.filter((m) => !m.parentId);
     const childMenuMap = new Map<number, any[]>();
 
-    // Group children by parentId
     for (const menu of menus) {
       if (menu.parentId) {
         if (!childMenuMap.has(menu.parentId)) {
@@ -52,11 +50,9 @@ export class MenusService {
       }
     }
 
-    // Build sorted list: parent followed by its children
     for (const parent of rootMenus) {
       sortedMenus.push(parent);
       const children = childMenuMap.get(parent.id) || [];
-      // Sort children by order
       children.sort((a, b) => a.order - b.order);
       for (const child of children) {
         sortedMenus.push(child);
@@ -64,6 +60,33 @@ export class MenusService {
     }
 
     return { message: 'Success', data: sortedMenus.map(sanitizeMenu) };
+  }
+
+  async getTree() {
+    const menus = await this.prisma.menu.findMany({
+      where: { parentId: null, deletedAt: null },
+      include: {
+        children: {
+          where: { deletedAt: null },
+          orderBy: { order: 'asc' },
+          include: {
+            children: {
+              where: { deletedAt: null },
+              orderBy: { order: 'asc' },
+              include: {
+                children: {
+                  where: { deletedAt: null },
+                  orderBy: { order: 'asc' },
+                }
+              }
+            }
+          }
+        },
+      },
+      orderBy: { order: 'asc' },
+    });
+
+    return { message: 'Success', data: menus.map(sanitizeMenu) };
   }
 
   async findOne(uuid: string) {

@@ -9,40 +9,13 @@ export class CreateMenuAccessDto {
   @IsNotEmpty({ message: 'menuUuid harus diisi.' })
   @IsUUID('4', { message: 'menuUuid harus berupa UUID.' })
   menuUuid: string;
-
-  @IsOptional()
-  @IsBoolean({ message: 'canView harus boolean.' })
-  canView?: boolean;
-
-  @IsOptional()
-  @IsBoolean({ message: 'canCreate harus boolean.' })
-  canCreate?: boolean;
-
-  @IsOptional()
-  @IsBoolean({ message: 'canEdit harus boolean.' })
-  canEdit?: boolean;
-
-  @IsOptional()
-  @IsBoolean({ message: 'canDelete harus boolean.' })
-  canDelete?: boolean;
 }
 
 export class UpdateMenuAccessDto {
   @IsOptional()
-  @IsBoolean({ message: 'canView harus boolean.' })
-  canView?: boolean;
-
-  @IsOptional()
-  @IsBoolean({ message: 'canCreate harus boolean.' })
-  canCreate?: boolean;
-
-  @IsOptional()
-  @IsBoolean({ message: 'canEdit harus boolean.' })
-  canEdit?: boolean;
-
-  @IsOptional()
-  @IsBoolean({ message: 'canDelete harus boolean.' })
-  canDelete?: boolean;
+  @IsNotEmpty({ message: 'menuUuid harus diisi.' })
+  @IsUUID('4', { message: 'menuUuid harus berupa UUID.' })
+  menuUuid?: string;
 }
 
 export class BulkMenuAccessDto {
@@ -50,30 +23,13 @@ export class BulkMenuAccessDto {
   @IsUUID('4', { message: 'roleUuid harus berupa UUID.' })
   roleUuid: string;
 
-  @IsArray({ message: 'menuAccess harus array.' })
-  @ValidateNested({ each: true })
-  @Type(() => MenuAccessItemDto)
-  menuAccess: MenuAccessItemDto[];
+  @IsArray({ message: 'menuUuids harus array.' })
+  @IsUUID('4', { each: true, message: 'Setiap item harus berupa UUID.' })
+  menuUuids: string[];
 }
 
 export class MenuAccessItemDto {
   @IsNotEmpty({ message: 'menuUuid harus diisi.' })
   @IsUUID('4', { message: 'menuUuid harus berupa UUID.' })
   menuUuid: string;
-
-  @IsOptional()
-  @IsBoolean()
-  canView?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  canCreate?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  canEdit?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  canDelete?: boolean;
 }

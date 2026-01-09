@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronRight, ChevronDown, Folder, File } from 'lucide-react';
 import { type Role } from '@/services/role.service';
 import { menuService, type Menu } from '@/services/menu.service';
-import { menuAccessService, type MenuAccessItemDto } from '@/services/menu-access.service';
+import { menuAccessService } from '@/services/menu-access.service';
+import { cn } from '@/lib/utils';
 
 interface MenuAccessDrawerProps {
   open: boolean;
@@ -15,23 +15,92 @@ interface MenuAccessDrawerProps {
   role: Role | null;
 }
 
+interface MenuTreeItemProps {
+  menu: Menu;
+  accessMap: Record<string, boolean>;
+  onToggle: (uuid: string, checked: boolean) => void;
+  level?: number;
+}
+
+function MenuTreeItem({ menu, accessMap, onToggle, level = 0 }: MenuTreeItemProps) {
+  const [isOpen, setIsOpen] = useState(true);
+  const hasChildren = menu.children && menu.children.length > 0;
+  const isChecked = accessMap[menu.uuid] || false;
+
+  const toggleOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
+  return (
+    <div className="flex flex-col">
+      <div 
+        className={cn(
+          "flex items-center py-2 px-2 hover:bg-accent/50 rounded-md transition-colors cursor-pointer group",
+          isChecked && "bg-primary/5"
+        )}
+        onClick={() => onToggle(menu.uuid, !isChecked)}
+      >
+        <div style={{ width: `${level * 24}px` }} />
+        
+        <div className="flex items-center gap-2 flex-1">
+          {hasChildren ? (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-5 w-5 p-0 hover:bg-transparent"
+              onClick={toggleOpen}
+            >
+              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
+          ) : (
+            <div className="w-5" />
+          )}
+          
+          {hasChildren ? (
+            <Folder className={cn("h-4 w-4", isChecked ? "text-primary" : "text-muted-foreground")} />
+          ) : (
+            <File className={cn("h-4 w-4", isChecked ? "text-primary" : "text-muted-foreground")} />
+          )}
+          
+          <span className={cn(
+            "text-sm font-medium",
+            isChecked ? "text-primary" : "text-foreground"
+          )}>
+            {menu.name}
+          </span>
+        </div>
+
+        <Checkbox 
+          checked={isChecked} 
+          onCheckedChange={(checked) => onToggle(menu.uuid, checked as boolean)}
+          className="ml-2"
+        />
+      </div>
+
+      {hasChildren && isOpen && (
+        <div className="flex flex-col">
+          {menu.children!.map((child) => (
+            <MenuTreeItem 
+              key={child.uuid} 
+              menu={child} 
+              accessMap={accessMap} 
+              onToggle={onToggle} 
+              level={level + 1} 
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MenuAccessDrawer({ open, onOpenChange, role }: MenuAccessDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [menus, setMenus] = useState<Menu[]>([]);
-  const [accessMap, setAccessMap] = useState<Record<string, MenuAccessItemDto>>({});
-
-  // Flatten menus helper
-  const flattenMenus = (items: Menu[]): Menu[] => {
-    let result: Menu[] = [];
-    items.forEach(item => {
-      result.push(item);
-      if (item.children) {
-        result = result.concat(flattenMenus(item.children));
-      }
-    });
-    return result;
-  };
+  const [menuTree, setMenuTree] = useState<Menu[]>([]);
+  const [accessMap, setAccessMap] = useState<Record<string, boolean>>({});
+  const [parentMap, setParentMap] = useState<Record<string, string>>({}); // childUuid -> parentUuid
 
   useEffect(() => {
     if (open && role) {
@@ -43,43 +112,35 @@ export function MenuAccessDrawer({ open, onOpenChange, role }: MenuAccessDrawerP
     if (!role) return;
     setLoading(true);
     try {
-      // Fetch all menus and current access in parallel
-      const [allMenus, currentAccess] = await Promise.all([
-        menuService.getAll(),
-        menuAccessService.findByRole(role.uuid),
-      ]);
+      const allMenusResponse = await menuService.getTree();
+      const allMenus = allMenusResponse.data || [];
+      const currentAccess = await menuAccessService.findByRole(role.uuid);
 
-      const flatList = flattenMenus(allMenus);
-      setMenus(flatList);
+      setMenuTree(allMenus);
 
-      // Initialize access map
-      const initialMap: Record<string, MenuAccessItemDto> = {};
+      // Initialize access map and parent map
+      const initialMap: Record<string, boolean> = {};
+      const initialParentMap: Record<string, string> = {};
       
-      // Default unchecked
-      flatList.forEach(m => {
-        initialMap[m.uuid] = {
-          menuUuid: m.uuid,
-          canView: false,
-          canCreate: false,
-          canEdit: false,
-          canDelete: false,
-        };
-      });
+      const processItem = (item: Menu, parentUuid?: string) => {
+        initialMap[item.uuid] = false;
+        if (parentUuid) {
+          initialParentMap[item.uuid] = parentUuid;
+        }
+        if (item.children) {
+          item.children.forEach(child => processItem(child, item.uuid));
+        }
+      };
+      allMenus.forEach((item: Menu) => processItem(item));
 
-      // Apply fetching permissions
       currentAccess.forEach((acc) => {
         if (acc.menu?.uuid) {
-          initialMap[acc.menu.uuid] = {
-            menuUuid: acc.menu.uuid,
-            canView: acc.canView,
-            canCreate: acc.canCreate,
-            canEdit: acc.canEdit,
-            canDelete: acc.canDelete,
-          };
+          initialMap[acc.menu.uuid] = true;
         }
       });
 
       setAccessMap(initialMap);
+      setParentMap(initialParentMap);
     } catch (error) {
       toast.error('Gagal memuat data menu access');
     } finally {
@@ -87,34 +148,63 @@ export function MenuAccessDrawer({ open, onOpenChange, role }: MenuAccessDrawerP
     }
   };
 
-  const handleCheckChange = (menuUuid: string, field: keyof MenuAccessItemDto, checked: boolean) => {
-    setAccessMap(prev => ({
-      ...prev,
-      [menuUuid]: {
-        ...prev[menuUuid],
-        [field]: checked
+  const handleToggle = (uuid: string, checked: boolean) => {
+    setAccessMap(prev => {
+      const newMap = { ...prev };
+      
+      const toggleWithChildren = (id: string, isChecked: boolean) => {
+        newMap[id] = isChecked;
+        
+        // Find children in menuTree recursively (this is slow if tree is deep, but menu is usually small)
+        const findAndToggleChildren = (items: Menu[]) => {
+          for (const item of items) {
+            if (item.uuid === id) {
+              const toggleAllChildren = (child: Menu) => {
+                newMap[child.uuid] = isChecked;
+                if (child.children) child.children.forEach(toggleAllChildren);
+              };
+              if (item.children) item.children.forEach(toggleAllChildren);
+              return true;
+            }
+            if (item.children && findAndToggleChildren(item.children)) return true;
+          }
+          return false;
+        };
+        findAndToggleChildren(menuTree);
+      };
+
+      toggleWithChildren(uuid, checked);
+
+      // If checked, recursively check parents
+      if (checked) {
+        let currentParentUuid = parentMap[uuid];
+        while (currentParentUuid) {
+          newMap[currentParentUuid] = true;
+          currentParentUuid = parentMap[currentParentUuid];
+        }
       }
-    }));
+      
+      return newMap;
+    });
   };
 
   const handleSave = async () => {
     if (!role) return;
     setSaving(true);
     try {
-      // Transform map to array
-      const menuAccess = Object.values(accessMap).filter(item => 
-        item.canView || item.canCreate || item.canEdit || item.canDelete
-      );
+      const menuUuids = Object.entries(accessMap)
+        .filter(([_, checked]) => checked)
+        .map(([uuid, _]) => uuid);
 
       await menuAccessService.bulkUpdate({
         roleUuid: role.uuid,
-        menuAccess,
+        menuUuids,
       });
 
-      toast.success('Permissions berhasil disimpan');
+      toast.success('Hak akses berhasil disimpan');
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Gagal menyimpan permissions');
+      toast.error(error?.response?.data?.message || 'Gagal menyimpan hak akses');
     } finally {
       setSaving(false);
     }
@@ -124,77 +214,54 @@ export function MenuAccessDrawer({ open, onOpenChange, role }: MenuAccessDrawerP
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-xl overflow-y-auto flex flex-col h-full">
-        <SheetHeader className="mb-4">
-          <SheetTitle>Manage Permissions</SheetTitle>
-          <SheetDescription>
-            Atur hak akses menu untuk role <strong>{role.name}</strong>.
+      <SheetContent className="sm:max-w-xl flex flex-col h-full bg-background border-l shadow-2xl">
+        <SheetHeader className="pb-6 border-b">
+          <SheetTitle className="text-2xl font-bold">Manage Menu Access</SheetTitle>
+          <SheetDescription className="text-base">
+            Pilih menu-menu yang dapat diakses oleh role <span className="font-semibold text-foreground underline decoration-primary/50 underline-offset-4">{role.name}</span>.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-auto -mx-6 px-6">
+        <div className="flex-1 overflow-y-auto py-6 px-1">
           {loading ? (
-            <div className="flex justify-center items-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex flex-col justify-center items-center h-60 gap-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground animate-pulse font-medium">Memuat struktur menu...</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[40%]">Menu</TableHead>
-                  <TableHead className="text-center">View</TableHead>
-                  <TableHead className="text-center">Create</TableHead>
-                  <TableHead className="text-center">Edit</TableHead>
-                  <TableHead className="text-center">Delete</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {menus.map((menu) => (
-                  <TableRow key={menu.uuid}>
-                    <TableCell className="font-medium">
-                      <div style={{ marginLeft: menu.parent ? '20px' : '0px' }}>
-                         {menu.name}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox 
-                        checked={accessMap[menu.uuid]?.canView} 
-                        onCheckedChange={(c) => handleCheckChange(menu.uuid, 'canView', c as boolean)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox 
-                        checked={accessMap[menu.uuid]?.canCreate} 
-                        onCheckedChange={(c) => handleCheckChange(menu.uuid, 'canCreate', c as boolean)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox 
-                        checked={accessMap[menu.uuid]?.canEdit} 
-                        onCheckedChange={(c) => handleCheckChange(menu.uuid, 'canEdit', c as boolean)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox 
-                        checked={accessMap[menu.uuid]?.canDelete} 
-                        onCheckedChange={(c) => handleCheckChange(menu.uuid, 'canDelete', c as boolean)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="space-y-1 pr-4">
+              {menuTree.length > 0 ? (
+                menuTree.map((menu) => (
+                  <MenuTreeItem 
+                    key={menu.uuid} 
+                    menu={menu} 
+                    accessMap={accessMap} 
+                    onToggle={handleToggle} 
+                  />
+                ))
+              ) : (
+                <div className="text-center py-10 border-2 border-dashed rounded-xl bg-muted/20">
+                  <p className="text-muted-foreground">Tidak ada menu yang tersedia.</p>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        <SheetFooter className="mt-4 pt-4 border-t sticky bottom-0 bg-background">
-          <div className="flex gap-2 w-full justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+        <SheetFooter className="mt-auto pt-6 border-t bg-background/80 backdrop-blur-sm sticky bottom-0">
+          <div className="flex gap-3 w-full justify-end">
+            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving} className="px-8">
               Batal
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Simpan Changes
+            <Button onClick={handleSave} disabled={saving || loading} className="px-8 shadow-lg shadow-primary/20">
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                'Simpan Hak Akses'
+              )}
             </Button>
           </div>
         </SheetFooter>
