@@ -11,6 +11,7 @@ import Dashboard from '@/pages/dashboard/Dashboard';
 import UserList from '@/pages/users/UserList';
 import RoleList from '@/pages/roles/RoleList';
 import MenuList from '@/pages/menus/MenuList';
+import NotificationList from '@/pages/notifications/NotificationList';
 import Forbidden from '@/pages/errors/Forbidden';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="users" element={<MenuProtectedRoute><UserList /></MenuProtectedRoute>} />
             <Route path="roles" element={<MenuProtectedRoute><RoleList /></MenuProtectedRoute>} />
             <Route path="menus" element={<MenuProtectedRoute><MenuList /></MenuProtectedRoute>} />
+            <Route path="notifications" element={<NotificationList />} />
             <Route path="menu-access" element={<Navigate to="/roles" replace />} />
           </Route>
 

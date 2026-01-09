@@ -80,3 +80,22 @@ model MenuAccess {
   @@map("menu_access")
 }
 
+model Notification {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  toRoleId    Int                              // Target role to receive notification
+  fromUserId  Int?                             // User who triggered the notification (nullable for system notifications)
+  message     String                           // Notification message
+  detailUrl   String?                          // URL to navigate when clicked
+  referenceId String?                          // Reference ID (e.g., user UUID that was created)
+  type        String    @default("info")       // info, success, warning, error
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([toRoleId])
+  @@index([isRead])
+  @@map("notifications")
+}

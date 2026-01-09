@@ -5,6 +5,8 @@ import { hashPassword } from '../../common/utils/hash.util';
 import { excludeFields } from '../../common/utils/sanitize.util';
 import { buildPaginatedResponse, calculateSkip } from '../../common/utils/pagination.util';
 import { QueueService } from '../queue/queue.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/dto';
 import { v4 as uuidv4 } from 'uuid';
 
 // Sanitize user object - remove id, password, and roleId; sanitize nested role
@@ -21,6 +23,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private queueService: QueueService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAll(page = 1, limit = 10, search?: string) {
@@ -80,7 +83,7 @@ export class UsersService {
     return { message: 'Success', data: sanitizeUser(user) };
   }
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, currentUserId?: number) {
     const existingUser = await this.prisma.user.findFirst({
       where: { email: createUserDto.email, deletedAt: null },
     });
@@ -133,6 +136,27 @@ export class UsersService {
         verificationToken,
         createdAt: user.createdAt.toISOString(),
       });
+    }
+
+    // Create notification for Admin role
+    try {
+      const adminRole = await this.prisma.role.findFirst({
+        where: { name: 'Admin', deletedAt: null },
+      });
+
+      if (adminRole) {
+        await this.notificationsService.create({
+          toRoleId: adminRole.id,
+          fromUserId: currentUserId,
+          message: `User baru telah didaftarkan: ${user.name}`,
+          detailUrl: `/users`,
+          referenceId: user.uuid,
+          type: NotificationType.INFO,
+        });
+      }
+    } catch (error) {
+      // Don't fail the user creation if notification fails
+      console.error('Failed to create notification:', error);
     }
 
     return { 

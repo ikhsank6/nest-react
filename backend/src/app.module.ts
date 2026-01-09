@@ -10,6 +10,7 @@ import { MenusModule } from './modules/menus/menus.module';
 import { MenuAccessModule } from './modules/menu-access/menu-access.module';
 import { EmailModule } from './modules/email/email.module';
 import { QueueModule } from './modules/queue/queue.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { QueueModule } from './modules/queue/queue.module';
     RolesModule,
     MenusModule,
     MenuAccessModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}
-
