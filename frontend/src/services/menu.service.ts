@@ -20,7 +20,7 @@ export const menuService = {
   },
 
   getAll: async (params?: { search?: string }): Promise<any> => {
-    const response = await api.get('/menus', { params: { q: params?.search } }) as any;
+    const response = await api.get('/menus', { params: { search: params?.search } }) as any;
     return response;
   },
 

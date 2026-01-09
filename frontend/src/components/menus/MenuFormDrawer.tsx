@@ -1,5 +1,6 @@
 import type { UseFormReturn } from 'react-hook-form';
 import { FormSheet } from '@/components/ui/form-sheet';
+import { IconPicker } from '@/components/ui/icon-picker';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -93,9 +94,13 @@ export function MenuFormDrawer({
               <FormItem>
                 <FormLabel>Icon</FormLabel>
                 <FormControl>
-                  <Input placeholder="lucide-icon-name" {...field} value={field.value || ''} disabled={loading} />
+                  <IconPicker 
+                    value={field.value || ''} 
+                    onChange={field.onChange}
+                    disabled={loading}
+                  />
                 </FormControl>
-                <FormDescription>Nama icon dari Lucide Icons</FormDescription>
+                <FormDescription>Pilih icon dari Lucide Icons</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

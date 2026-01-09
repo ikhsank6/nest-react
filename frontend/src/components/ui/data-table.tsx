@@ -32,12 +32,13 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+import type { DragEndEvent, DragOverEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -105,11 +106,13 @@ interface DataTableProps<T> {
 
   onItemsPerPageChange?: (value: number) => void
   onReorder?: (newOrder: T[]) => void
+  onReparent?: (itemId: string, newParentId: string | null) => void
+  canBeParent?: (item: T) => boolean
   className?: string
 }
 
 // Sortable Row Component
-function SortableTableRow({ children, id, className, ...props }: any) {
+function SortableTableRow({ children, id, className, isDropTarget, ...props }: any) {
   const {
     attributes,
     listeners,
@@ -117,6 +120,7 @@ function SortableTableRow({ children, id, className, ...props }: any) {
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({ id });
 
   const style = {
@@ -130,7 +134,11 @@ function SortableTableRow({ children, id, className, ...props }: any) {
     <TableRow
       ref={setNodeRef}
       style={style}
-      className={cn(className, isDragging && "bg-muted/50 shadow-md")}
+      className={cn(
+        className, 
+        isDragging && "bg-muted/50 shadow-md",
+        isOver && isDropTarget && "ring-2 ring-primary ring-inset bg-primary/10"
+      )}
       {...props}
     >
       <TableCell className="w-[50px] px-2 text-center cursor-move" {...attributes} {...listeners}>
@@ -138,6 +146,47 @@ function SortableTableRow({ children, id, className, ...props }: any) {
       </TableCell>
       {children}
     </TableRow>
+  );
+}
+
+// Sortable Grid Card Component
+function SortableGridCard({ children, id, className, isDropTarget, ...props }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isOver,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 0,
+  } as React.CSSProperties;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        className,
+        isDragging && "opacity-50 shadow-2xl scale-105",
+        isOver && isDropTarget && "ring-2 ring-primary ring-inset bg-primary/10"
+      )}
+      {...props}
+    >
+      <div 
+        className="absolute top-2 left-2 cursor-move p-1 rounded hover:bg-muted/50 z-10"
+        {...attributes} 
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -167,21 +216,41 @@ export function DataTable<T>({
   onItemsPerPageChange,
 
   onReorder,
+  onReparent,
+  canBeParent,
   className,
 }: DataTableProps<T>) {
   const [viewMode, setViewMode] = React.useState<'table' | 'grid'>('table')
   const [goToPage, setGoToPage] = React.useState('')
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px of movement required before drag starts
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
+  const handleDragOver = (_event: DragOverEvent) => {
+    // Just for visual feedback - handled by useSortable's isOver
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
+      const overItem = data.find((item) => keyExtractor(item) === over.id);
+      
+      // Check if dropping onto a parent-capable item (for reparenting)
+      if (onReparent && overItem && canBeParent?.(overItem)) {
+        // Reparent: make active item a child of over item
+        onReparent(active.id as string, over.id as string);
+        return;
+      }
+      
+      // Regular reorder
       const oldIndex = data.findIndex((item) => keyExtractor(item) === active.id);
       const newIndex = data.findIndex((item) => keyExtractor(item) === over.id);
       
@@ -285,6 +354,7 @@ export function DataTable<T>({
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
+              onDragOver={handleDragOver}
               onDragEnd={handleDragEnd}
             >
               <Table>
@@ -316,6 +386,7 @@ export function DataTable<T>({
                         key={keyExtractor(item)} 
                         id={keyExtractor(item)}
                         className="group hover:bg-muted/30"
+                        isDropTarget={canBeParent?.(item) ?? false}
                       >
                         {columns.map((column) => (
                           <TableCell key={column.key} className={cn("px-6 py-4", column.className)}>
@@ -507,6 +578,77 @@ export function DataTable<T>({
                 </ActionButton>
               )}
             </div>
+          ) : onReorder ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={data.map((item) => keyExtractor(item))}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {data.map((item) => (
+                    <SortableGridCard
+                      key={keyExtractor(item)}
+                      id={keyExtractor(item)}
+                      className="group relative rounded-xl border bg-background p-5 pl-10 hover:shadow-lg hover:border-primary/20 transition-all duration-300"
+                      isDropTarget={canBeParent?.(item) ?? false}
+                    >
+                      <div className="flex flex-col gap-4">
+                        {/* Render standard columns in a vertical stack or specific layout */}
+                        {columns.map((column, idx) => (
+                          <div key={column.key} className={idx === 0 ? "mb-1" : ""}>
+                             {idx > 0 && <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/70 block mb-1">{column.header}</span>}
+                             <div className={cn(idx === 0 ? "text-lg font-bold text-foreground" : "text-sm text-foreground/90", column.className)}>
+                               {column.cell(item)}
+                             </div>
+                          </div>
+                        ))}
+                        
+                        {/* Actions in Grid */}
+                        {actions && (
+                          <div className="flex items-center justify-end gap-2 mt-2 pt-4 border-t border-muted">
+                            {actions.onView && (
+                              <ActionButton 
+                                variant="secondary" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 rounded-full"
+                                onClick={() => actions.onView?.(item)}
+                                icon={<Eye className="h-4 w-4" />}
+                                tooltip="Lihat Detail"
+                              />
+                            )}
+                            {actions.onEdit && (
+                              <ActionButton 
+                                variant="secondary" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 rounded-full hover:text-primary hover:bg-primary/10"
+                                onClick={() => actions.onEdit?.(item)}
+                                icon={<Edit2 className="h-4 w-4" />}
+                                tooltip="Edit Data"
+                              />
+                            )}
+                            {actions.onDelete && (
+                              <ActionButton 
+                                variant="secondary" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 rounded-full hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => actions.onDelete?.(item)}
+                                icon={<Trash2 className="h-4 w-4" />}
+                                tooltip="Hapus Data"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </SortableGridCard>
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {data.map((item) => (

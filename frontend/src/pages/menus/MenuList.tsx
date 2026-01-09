@@ -94,6 +94,47 @@ export default function MenuList() {
       }
   };
 
+  const handleReparent = async (itemId: string, newParentId: string | null) => {
+    // Find the menu being moved
+    const menuToMove = menus.find(m => m.uuid === itemId);
+    const newParent = menus.find(m => m.uuid === newParentId);
+    
+    if (!menuToMove || !newParent) return;
+    
+    // Prevent making a menu its own child or child of its current children
+    if (menuToMove.uuid === newParent.uuid) return;
+    
+    // Optimistic update
+    const updatedMenus = menus.map(menu => {
+      if (menu.uuid === itemId) {
+        return {
+          ...menu,
+          parent: newParent,
+        };
+      }
+      return menu;
+    });
+    setData(updatedMenus);
+
+    try {
+      // Send reorder request with updated parent
+      const items = [{
+        uuid: itemId,
+        order: menuToMove.order,
+        parentUuid: newParentId
+      }];
+      await menuService.reorder(items);
+      toast.success(`${menuToMove.name} dipindahkan ke ${newParent.name}`);
+      fetchMenus(); // Refresh to get proper order
+    } catch (error) {
+      toast.error('Gagal memindahkan menu');
+      fetchMenus(); // Revert by fetching
+    }
+  };
+
+  // Check if a menu can be a parent (only root menus can be parents)
+  const canBeParent = (menu: Menu) => !menu.parent;
+
   const openCreateDrawer = () => {
     form.reset({
       name: '',
@@ -180,10 +221,19 @@ export default function MenuList() {
       key: 'name',
       header: 'Nama Menu',
       cell: (menu) => (
-        <div className="flex flex-col">
+        <div className="flex items-center">
+          {menu.parent && <span className="w-6 border-l-2 border-b-2 border-muted-foreground/30 h-4 mr-2 rounded-bl-sm" />}
           <span className="font-medium">{menu.name}</span>
-          {menu.parent && <span className="text-xs text-muted-foreground">Parent: {menu.parent.name}</span>}
         </div>
+      ),
+    },
+    {
+      key: 'parent',
+      header: 'Parent',
+      cell: (menu) => (
+        <span className="text-muted-foreground text-sm">
+          {menu.parent?.name || '-'}
+        </span>
       ),
     },
     {
@@ -244,6 +294,8 @@ export default function MenuList() {
         onItemsPerPageChange={handleLimitChange}
         showPagination={totalItems > 0}
         onReorder={handleReorder}
+        onReparent={handleReparent}
+        canBeParent={canBeParent}
       />
 
       <MenuViewDrawer

@@ -16,9 +16,9 @@ export class MenusController {
   @Get()
   @Roles('Admin')
   @ApiOperation({ summary: 'Get all menus with hierarchy' })
-  @ApiQuery({ name: 'q', required: false, description: 'Search query' })
-  async findAll(@Query('q') q?: string) {
-    return this.menusService.findAll(q);
+  @ApiQuery({ name: 'search', required: false, description: 'Search query' })
+  async findAll(@Query('search') search?: string) {
+    return this.menusService.findAll(search);
   }
 
   @Get(':uuid')
