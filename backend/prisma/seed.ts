@@ -79,10 +79,12 @@ async function main() {
 
   const usersMenu = await prisma.menu.upsert({
     where: { id: 3 },
-    update: {},
+    update: {
+      path: '/master-data/users',
+    },
     create: {
       name: 'Users',
-      path: '/users',
+      path: '/master-data/users',
       icon: 'Users',
       parentId: masterMenu.id,
       order: 1,
@@ -93,10 +95,12 @@ async function main() {
 
   const rolesMenu = await prisma.menu.upsert({
     where: { id: 4 },
-    update: {},
+    update: {
+      path: '/master-data/roles',
+    },
     create: {
       name: 'Roles',
-      path: '/roles',
+      path: '/master-data/roles',
       icon: 'Shield',
       parentId: masterMenu.id,
       order: 2,
@@ -107,10 +111,12 @@ async function main() {
 
   const menusMenu = await prisma.menu.upsert({
     where: { id: 5 },
-    update: {},
+    update: {
+      path: '/master-data/menus',
+    },
     create: {
       name: 'Menus',
-      path: '/menus',
+      path: '/master-data/menus',
       icon: 'Menu',
       parentId: masterMenu.id,
       order: 3,

@@ -20,17 +20,17 @@ export interface BulkMenuAccessDto {
 
 export const menuAccessService = {
   findByRole: async (roleUuid: string): Promise<MenuAccess[]> => {
-    const response = await api.get(`/menu-access/role/${roleUuid}`) as any;
+    const response = await api.get(`/master-data/menu-access/role/${roleUuid}`) as any;
     return response?.data || [];
   },
 
   update: async (uuid: string, data: Partial<MenuAccess>) => {
-    const response = await api.put(`/menu-access/${uuid}`, data) as any;
+    const response = await api.put(`/master-data/menu-access/${uuid}`, data) as any;
     return response?.data;
   },
 
   bulkUpdate: async (data: BulkMenuAccessDto) => {
-    const response = await api.put('/menu-access/bulk', data) as any;
+    const response = await api.put('/master-data/menu-access/bulk', data) as any;
     return response?.data;
   },
 };

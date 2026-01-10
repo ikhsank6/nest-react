@@ -15,6 +15,16 @@ import {
   BadgeCheck,
   CreditCard,
   Bell,
+  Menu,
+  FileText,
+  FolderOpen,
+  Settings,
+  Home,
+  Box,
+  Layers,
+  PieChart,
+  BarChart,
+  type LucideIcon,
 } from "lucide-react"
 
 import {
@@ -62,13 +72,24 @@ import { useAuthStore, type AuthMenu } from "@/stores/auth.store"
 import { authService } from "@/services/auth.service"
 import { profileService } from "@/services/profile.service"
 
-const iconMap: Record<string, React.ComponentType<any>> = {
+// Icon map for dynamic menu rendering
+const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
   Users,
   Shield,
   Database,
   SquareTerminal,
   Settings2,
+  Menu,
+  FileText,
+  FolderOpen,
+  Settings,
+  Home,
+  Box,
+  Layers,
+  PieChart,
+  BarChart,
+  Bell,
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -139,8 +160,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {menus.map((menu: AuthMenu) => {
               const Icon = menu.icon ? iconMap[menu.icon] || SquareTerminal : SquareTerminal
               const hasChildren = menu.children && menu.children.length > 0
-              const isActive = menu.path === location.pathname || 
-                               menu.children?.some((child: AuthMenu) => child.path === location.pathname)
+              
+              // Check if current path matches menu or any of its children
+              const isChildActive = menu.children?.some((child: AuthMenu) => 
+                child.path && location.pathname.startsWith(child.path)
+              )
+              const isMenuActive = menu.path ? location.pathname.startsWith(menu.path) : false
+              const isActive = isMenuActive || isChildActive
 
               if (hasChildren) {
                 return (
@@ -160,15 +186,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {menu.children?.map((subItem: AuthMenu) => (
-                            <SidebarMenuSubItem key={subItem.uuid}>
-                              <SidebarMenuSubButton asChild isActive={location.pathname === subItem.path}>
-                                <Link to={subItem.path || "#"}>
-                                  <span>{subItem.name}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
+                          {menu.children?.map((subItem: AuthMenu) => {
+                            const isSubActive = subItem.path ? location.pathname.startsWith(subItem.path) : false
+                            return (
+                              <SidebarMenuSubItem key={subItem.uuid}>
+                                <SidebarMenuSubButton asChild isActive={isSubActive}>
+                                  <Link to={subItem.path || "#"}>
+                                    <span>{subItem.name}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            )
+                          })}
                         </SidebarMenuSub>
                       </CollapsibleContent>
                     </SidebarMenuItem>

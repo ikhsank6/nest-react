@@ -52,34 +52,33 @@ export interface PaginatedResponse<T> {
 
 export const userService = {
   getAll: async (page = 1, limit = 10, search?: string): Promise<PaginatedResponse<User>> => {
-    let url = `/users?page=${page}&limit=${limit}`;
+    let url = `/master-data/users?page=${page}&limit=${limit}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     const response = await api.get(url) as any;
     return response;
   },
 
   getOne: async (uuid: string): Promise<User> => {
-    const response = await api.get(`/users/${uuid}`) as any;
+    const response = await api.get(`/master-data/users/${uuid}`) as any;
     return response?.data;
   },
 
   create: async (data: CreateUserData) => {
-    const response = await api.post('/users', data) as any;
+    const response = await api.post('/master-data/users', data) as any;
     return response?.data;
   },
 
   update: async (uuid: string, data: UpdateUserData) => {
-    const response = await api.put(`/users/${uuid}`, data) as any;
+    const response = await api.put(`/master-data/users/${uuid}`, data) as any;
     return response?.data;
   },
 
   delete: async (uuid: string) => {
-    return api.delete(`/users/${uuid}`);
+    return api.delete(`/master-data/users/${uuid}`);
   },
 
   resendVerification: async (uuid: string) => {
-    const response = await api.post(`/users/${uuid}/resend-verification`) as any;
+    const response = await api.post(`/master-data/users/${uuid}/resend-verification`) as any;
     return response;
   },
 };
-

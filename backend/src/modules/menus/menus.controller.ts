@@ -8,7 +8,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('Menus')
 @ApiBearerAuth('JWT-auth')
-@Controller('menus')
+@Controller('master-data/menus')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MenusController {
   constructor(private readonly menusService: MenusService) {}

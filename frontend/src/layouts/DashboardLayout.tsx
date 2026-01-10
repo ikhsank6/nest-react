@@ -32,22 +32,16 @@ export default function DashboardLayout() {
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink asChild>
-                    <Link to="/dashboard">Dashboard</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
                 {pathnames.map((name, index) => {
                   const routeTo = `/${pathnames.slice(0, index + 1).join("/")}`;
                   const isLast = index === pathnames.length - 1;
-                  const formattedName = name.charAt(0).toUpperCase() + name.slice(1).replace("-", " ");
-
-                  if (name === "dashboard") return null;
+                  const isFirst = index === 0;
+                  const formattedName = name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, " ");
 
                   return (
                     <React.Fragment key={routeTo}>
-                      <BreadcrumbSeparator className="hidden md:block" />
-                      <BreadcrumbItem>
+                      {!isFirst && <BreadcrumbSeparator className="hidden md:block" />}
+                      <BreadcrumbItem className={isFirst ? "" : ""}>
                         {isLast ? (
                           <BreadcrumbPage>{formattedName}</BreadcrumbPage>
                         ) : (

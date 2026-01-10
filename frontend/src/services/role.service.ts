@@ -24,28 +24,28 @@ export interface UpdateRoleData {
 
 export const roleService = {
   getAll: async (page = 1, limit = 10, search?: string): Promise<any> => {
-    let url = `/roles?page=${page}&limit=${limit}`;
+    let url = `/master-data/roles?page=${page}&limit=${limit}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     const response = await api.get(url) as any;
     return response;
   },
 
   getOne: async (uuid: string): Promise<Role> => {
-    const response = await api.get(`/roles/${uuid}`) as any;
+    const response = await api.get(`/master-data/roles/${uuid}`) as any;
     return response?.data;
   },
 
   create: async (data: CreateRoleData) => {
-    const response = await api.post('/roles', data) as any;
+    const response = await api.post('/master-data/roles', data) as any;
     return response?.data;
   },
 
   update: async (uuid: string, data: UpdateRoleData) => {
-    const response = await api.put(`/roles/${uuid}`, data) as any;
+    const response = await api.put(`/master-data/roles/${uuid}`, data) as any;
     return response?.data;
   },
 
   delete: async (uuid: string) => {
-    return api.delete(`/roles/${uuid}`);
+    return api.delete(`/master-data/roles/${uuid}`);
   },
 };

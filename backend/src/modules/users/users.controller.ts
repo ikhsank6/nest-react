@@ -9,7 +9,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
-@Controller('users')
+@Controller('master-data/users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
