@@ -15,6 +15,7 @@ import {
   Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { extname, join, basename } from 'path';
 import { createReadStream, existsSync, statSync } from 'fs';
@@ -23,6 +24,8 @@ import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { ProfileService } from './profile.service';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/profile.dto';
 
+@ApiTags('Profile')
+@ApiBearerAuth('JWT-auth')
 @Controller('profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
