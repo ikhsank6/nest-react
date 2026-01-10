@@ -127,7 +127,6 @@ export class UsersService {
         // Only set verifiedAt if user is active
         verifiedAt: isActive ? new Date() : null,
         verificationToken,
-        createdBy: currentUserId?.toString(),
       },
       include: { role: true },
     });
@@ -172,7 +171,7 @@ export class UsersService {
     };
   }
 
-  async update(uuid: string, updateUserDto: UpdateUserDto, currentUserId?: number) {
+  async update(uuid: string, updateUserDto: UpdateUserDto) {
     const existing = await this.prisma.user.findFirst({
       where: { uuid, deletedAt: null },
     });
@@ -212,8 +211,6 @@ export class UsersService {
     if (updateUserDto.password) {
       data.password = await hashPassword(updateUserDto.password);
     }
-
-    data.updatedBy = currentUserId?.toString();
 
     const user = await this.prisma.user.update({
       where: { id: existing.id },

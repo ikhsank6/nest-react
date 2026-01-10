@@ -99,7 +99,7 @@ export class MenusService {
     return { message: 'Success', data: new MenuResource(menu) };
   }
 
-  async create(createMenuDto: CreateMenuDto, currentUserId?: number) {
+  async create(createMenuDto: CreateMenuDto) {
     if (createMenuDto.parentUuid) {
       const parent = await this.prisma.menu.findFirst({
         where: { uuid: createMenuDto.parentUuid, deletedAt: null },
@@ -113,7 +113,6 @@ export class MenusService {
         data: { 
           ...dataWithoutParentUuid, 
           parentId: parent.id,
-          createdBy: currentUserId?.toString(),
         },
         include: { parent: true },
       });
@@ -122,16 +121,13 @@ export class MenusService {
 
     const { parentUuid, ...data } = createMenuDto;
     const menu = await this.prisma.menu.create({
-      data: {
-        ...data,
-        createdBy: currentUserId?.toString(),
-      },
+      data: data,
       include: { parent: true },
     });
     return { message: 'Menu berhasil dibuat.', data: new MenuResource(menu) };
   }
 
-  async update(uuid: string, updateMenuDto: UpdateMenuDto, currentUserId?: number) {
+  async update(uuid: string, updateMenuDto: UpdateMenuDto) {
     const existing = await this.prisma.menu.findFirst({
       where: { uuid, deletedAt: null },
     });
@@ -164,7 +160,6 @@ export class MenusService {
       data: {
         ...dataWithoutParentUuid,
         ...(parentId !== undefined && { parentId }),
-        updatedBy: currentUserId?.toString(),
       },
       include: { parent: true },
     });

@@ -40,9 +40,8 @@ export class MenusController {
   @HttpCode(200)
   @Roles('Admin')
   @ApiOperation({ summary: 'Create new menu' })
-  async create(@Body() createMenuDto: CreateMenuDto, @Request() req: any) {
-    const currentUserId = req.user?.id;
-    return this.menusService.create(createMenuDto, currentUserId);
+  async create(@Body() createMenuDto: CreateMenuDto) {
+    return this.menusService.create(createMenuDto);
   }
 
   @Post('reorder')
@@ -60,10 +59,8 @@ export class MenusController {
   async update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateMenuDto: UpdateMenuDto,
-    @Request() req: any,
   ) {
-    const currentUserId = req.user?.id;
-    return this.menusService.update(uuid, updateMenuDto, currentUserId);
+    return this.menusService.update(uuid, updateMenuDto);
   }
 
   @Delete(':uuid')

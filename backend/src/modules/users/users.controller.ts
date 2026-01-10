@@ -49,10 +49,8 @@ export class UsersController {
   async update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateUserDto: UpdateUserDto,
-    @Request() req: any,
   ) {
-    const currentUserId = req.user?.id;
-    return this.usersService.update(uuid, updateUserDto, currentUserId);
+    return this.usersService.update(uuid, updateUserDto);
   }
 
   @Delete(':uuid')

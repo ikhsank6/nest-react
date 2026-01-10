@@ -33,9 +33,8 @@ export class RolesController {
   @HttpCode(200)
   @Roles('Admin')
   @ApiOperation({ summary: 'Create new role' })
-  async create(@Body() createRoleDto: CreateRoleDto, @Request() req: any) {
-    const currentUserId = req.user?.id;
-    return this.rolesService.create(createRoleDto, currentUserId);
+  async create(@Body() createRoleDto: CreateRoleDto) {
+    return this.rolesService.create(createRoleDto);
   }
 
   @Put(':uuid')
@@ -45,10 +44,8 @@ export class RolesController {
   async update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateRoleDto: UpdateRoleDto,
-    @Request() req: any,
   ) {
-    const currentUserId = req.user?.id;
-    return this.rolesService.update(uuid, updateRoleDto, currentUserId);
+    return this.rolesService.update(uuid, updateRoleDto);
   }
 
   @Delete(':uuid')

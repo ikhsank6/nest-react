@@ -51,7 +51,7 @@ export class RolesService {
     return { message: 'Success', data: new RoleResource(role) };
   }
 
-  async create(createRoleDto: CreateRoleDto, currentUserId?: number) {
+  async create(createRoleDto: CreateRoleDto) {
     const existingRole = await this.prisma.role.findFirst({
       where: { name: createRoleDto.name, deletedAt: null },
     });
@@ -61,15 +61,12 @@ export class RolesService {
     }
 
     const role = await this.prisma.role.create({ 
-      data: {
-        ...createRoleDto,
-        createdBy: currentUserId?.toString(),
-      } 
+      data: createRoleDto 
     });
     return { message: 'Role berhasil dibuat.', data: new RoleResource(role) };
   }
 
-  async update(uuid: string, updateRoleDto: UpdateRoleDto, currentUserId?: number) {
+  async update(uuid: string, updateRoleDto: UpdateRoleDto) {
     const existing = await this.prisma.role.findFirst({
       where: { uuid, deletedAt: null },
     });
@@ -89,10 +86,7 @@ export class RolesService {
 
     const role = await this.prisma.role.update({
       where: { id: existing.id },
-      data: {
-        ...updateRoleDto,
-        updatedBy: currentUserId?.toString(),
-      },
+      data: updateRoleDto,
     });
 
     return { message: 'Role berhasil diupdate.', data: new RoleResource(role) };
