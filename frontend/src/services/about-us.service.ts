@@ -10,6 +10,7 @@ export interface AboutUs {
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
+    createdBy?: string | null;
 }
 
 export interface CreateAboutUsData {
@@ -31,19 +32,15 @@ export interface UpdateAboutUsData {
 }
 
 export const aboutUsService = {
-    getAll: async (includeInactive = false): Promise<any> => {
-        const url = includeInactive ? '/cms/about-us?all=true' : '/cms/about-us';
+    getAll: async (page = 1, limit = 10, search?: string): Promise<any> => {
+        let url = `/cms/about-us?page=${page}&limit=${limit}&all=true`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
         const response = await api.get(url) as any;
         return response;
     },
 
     getOne: async (uuid: string): Promise<AboutUs> => {
         const response = await api.get(`/cms/about-us/${uuid}`) as any;
-        return response?.data;
-    },
-
-    getBySection: async (section: string): Promise<AboutUs> => {
-        const response = await api.get(`/cms/about-us/section/${section}`) as any;
         return response?.data;
     },
 

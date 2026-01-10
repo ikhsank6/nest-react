@@ -6,17 +6,44 @@ import { CreateAboutUsDto, UpdateAboutUsDto } from './dto/about-us.dto';
 export class AboutUsService {
     constructor(private prisma: PrismaService) { }
 
-    async findAll(includeInactive = false) {
-        const where = includeInactive ? { deletedAt: null } : { deletedAt: null, isActive: true };
+    async findAll(page = 1, limit = 10, search?: string, includeInactive = false) {
+        const skip = (page - 1) * limit;
 
-        const sections = await this.prisma.aboutUs.findMany({
-            where,
-            orderBy: { order: 'asc' },
-        });
+        const whereClause: any = { deletedAt: null };
+
+        if (!includeInactive) {
+            whereClause.isActive = true;
+        }
+
+        if (search) {
+            whereClause.OR = [
+                { section: { contains: search, mode: 'insensitive' } },
+                { title: { contains: search, mode: 'insensitive' } },
+                { content: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+
+        const [sections, total] = await Promise.all([
+            this.prisma.aboutUs.findMany({
+                where: whereClause,
+                orderBy: { order: 'asc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.aboutUs.count({ where: whereClause }),
+        ]);
 
         return {
             message: 'Daftar section About Us berhasil diambil',
             data: sections,
+            meta: {
+                page: {
+                    total,
+                    current_page: page,
+                    per_page: limit,
+                    from: skip + 1,
+                },
+            },
         };
     }
 

@@ -8,9 +8,9 @@ import { Plus } from 'lucide-react';
 import { showSuccess, showError } from '@/lib/utils';
 import { createRoleSchema, type CreateRoleFormData } from '@/lib/validations';
 import { useTable } from '@/hooks/useTable';
-import { RoleViewDrawer } from '@/components/roles/RoleViewDrawer';
-import { RoleFormDrawer } from '@/components/roles/RoleFormDrawer';
-import { MenuAccessDrawer } from '@/components/roles/MenuAccessDrawer';
+import { RoleViewDrawer } from '@/components/master-data/roles/RoleViewDrawer';
+import { RoleFormDrawer } from '@/components/master-data/roles/RoleFormDrawer';
+import { MenuAccessDrawer } from '@/components/master-data/roles/MenuAccessDrawer';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
 import { AuditInfo } from '@/components/ui/audit-info';
 

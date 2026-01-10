@@ -10,8 +10,8 @@ import { Plus, Mail } from 'lucide-react';
 import { showSuccess, showError } from '@/lib/utils';
 import { userFormSchema, type UserFormData } from '@/lib/validations';
 import { useTable } from '@/hooks/useTable';
-import { UserViewDrawer } from '@/components/users/UserViewDrawer';
-import { UserFormDrawer } from '@/components/users/UserFormDrawer';
+import { UserViewDrawer } from '@/components/master-data/users/UserViewDrawer';
+import { UserFormDrawer } from '@/components/master-data/users/UserFormDrawer';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
 import {
   Tooltip,

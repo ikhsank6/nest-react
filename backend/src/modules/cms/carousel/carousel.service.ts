@@ -4,19 +4,45 @@ import { CreateCarouselDto, UpdateCarouselDto } from './dto/carousel.dto';
 
 @Injectable()
 export class CarouselService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async findAll(includeInactive = false) {
-    const where = includeInactive ? { deletedAt: null } : { deletedAt: null, isActive: true };
-    
-    const carousels = await this.prisma.carousel.findMany({
-      where,
-      orderBy: { order: 'asc' },
-    });
+  async findAll(page = 1, limit = 10, search?: string, includeInactive = false) {
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = { deletedAt: null };
+
+    if (!includeInactive) {
+      whereClause.isActive = true;
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { subtitle: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [carousels, total] = await Promise.all([
+      this.prisma.carousel.findMany({
+        where: whereClause,
+        orderBy: { order: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.carousel.count({ where: whereClause }),
+    ]);
 
     return {
       message: 'Daftar carousel berhasil diambil',
       data: carousels,
+      meta: {
+        page: {
+          total,
+          current_page: page,
+          per_page: limit,
+          from: skip + 1,
+        },
+      },
     };
   }
 

@@ -10,6 +10,7 @@ export interface Carousel {
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
+    createdBy?: string | null;
 }
 
 export interface CreateCarouselData {
@@ -31,8 +32,9 @@ export interface UpdateCarouselData {
 }
 
 export const carouselService = {
-    getAll: async (includeInactive = false): Promise<any> => {
-        const url = includeInactive ? '/cms/carousel?all=true' : '/cms/carousel';
+    getAll: async (page = 1, limit = 10, search?: string): Promise<any> => {
+        let url = `/cms/carousel?page=${page}&limit=${limit}&all=true`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
         const response = await api.get(url) as any;
         return response;
     },

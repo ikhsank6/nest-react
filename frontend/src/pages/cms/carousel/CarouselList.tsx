@@ -1,49 +1,35 @@
 import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { carouselService, type Carousel } from '@/services/carousel.service';
 import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Image as ImageIcon } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { showSuccess, showError } from '@/lib/utils';
+import { carouselFormSchema, type CarouselFormData } from '@/lib/cms-validations';
+import { useTable } from '@/hooks/useTable';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
+import { CarouselFormDrawer, CarouselViewDrawer } from '@/components/cms/carousel';
 import { AuditInfo } from '@/components/ui/audit-info';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 
-const carouselSchema = z.object({
-  title: z.string().min(1, 'Title wajib diisi'),
-  subtitle: z.string().optional(),
-  image: z.string().min(1, 'Image path wajib diisi'),
-  link: z.string().optional(),
-  order: z.number().optional(),
-  isActive: z.boolean().optional(),
-});
-
-type CarouselFormData = z.infer<typeof carouselSchema>;
-type DrawerMode = 'create' | 'edit' | null;
+type DrawerMode = 'create' | 'edit' | 'view' | null;
 
 export default function CarouselList() {
-  const [carousels, setCarousels] = useState<Carousel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: carousels,
+    loading,
+    error,
+    search,
+    page,
+    limit,
+    totalPages,
+    totalItems,
+    setPage,
+    setLimit,
+    setSearch,
+    refresh: fetchData,
+  } = useTable<Carousel>('carousels', useCallback((p, l, s) => carouselService.getAll(p, l, s), []));
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedItem, setSelectedItem] = useState<Carousel | null>(null);
@@ -52,7 +38,7 @@ export default function CarouselList() {
   const [itemToDelete, setItemToDelete] = useState<Carousel | null>(null);
 
   const form = useForm<CarouselFormData>({
-    resolver: zodResolver(carouselSchema),
+    resolver: zodResolver(carouselFormSchema),
     defaultValues: {
       title: '',
       subtitle: '',
@@ -63,31 +49,13 @@ export default function CarouselList() {
     },
   });
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await carouselService.getAll(true);
-      setCarousels(response?.data || []);
-    } catch (error) {
-      showError(error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useState(() => {
-    fetchData();
-  });
+  const handleSearch = (val: string) => setSearch(val);
+  const handlePageChange = (p: number) => setPage(p);
+  const handleLimitChange = (l: number) => setLimit(l);
+  const handleRefresh = () => fetchData();
 
   const openCreateDrawer = () => {
-    form.reset({
-      title: '',
-      subtitle: '',
-      image: '',
-      link: '',
-      order: 0,
-      isActive: true,
-    });
+    form.reset({ title: '', subtitle: '', image: '', link: '', order: 0, isActive: true });
     setSelectedItem(null);
     setDrawerMode('create');
     setDrawerOpen(true);
@@ -104,6 +72,12 @@ export default function CarouselList() {
       isActive: item.isActive,
     });
     setDrawerMode('edit');
+    setDrawerOpen(true);
+  };
+
+  const openViewDrawer = (item: Carousel) => {
+    setSelectedItem(item);
+    setDrawerMode('view');
     setDrawerOpen(true);
   };
 
@@ -125,8 +99,8 @@ export default function CarouselList() {
       }
       closeDrawer();
       fetchData();
-    } catch (error) {
-      showError(error);
+    } catch (err) {
+      showError(err);
     } finally {
       setSubmitting(false);
     }
@@ -138,8 +112,8 @@ export default function CarouselList() {
       await carouselService.delete(itemToDelete.uuid);
       showSuccess('Carousel berhasil dihapus');
       fetchData();
-    } catch (error) {
-      showError(error);
+    } catch (err) {
+      showError(err);
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -153,52 +127,39 @@ export default function CarouselList() {
 
   const columns: Column<Carousel>[] = [
     {
-      key: 'image',
-      header: 'Preview',
-      cell: (item) => (
-        <div className="h-16 w-24 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-          {item.image ? (
-            <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
-          ) : (
-            <ImageIcon className="h-6 w-6 text-muted-foreground" />
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'title',
-      header: 'Title',
+      key: 'info',
+      header: 'Carousel',
       cell: (item) => (
         <div className="flex flex-col">
           <span className="font-medium">{item.title}</span>
-          {item.subtitle && (
-            <span className="text-xs text-muted-foreground">{item.subtitle}</span>
-          )}
+          {item.subtitle && <span className="text-xs text-muted-foreground">{item.subtitle}</span>}
         </div>
       ),
     },
     {
       key: 'order',
-      header: 'Order',
-      cell: (item) => <span className="font-mono">{item.order}</span>,
+      header: 'Urutan',
+      cell: (item) => <span className="text-sm">{item.order}</span>,
     },
     {
       key: 'status',
       header: 'Status',
       cell: (item) => (
-        <Badge variant={item.isActive ? 'default' : 'secondary'}>
-          {item.isActive ? 'Active' : 'Inactive'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <div className={`h-2 w-2 rounded-full ${item.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+          <span className="text-sm">{item.isActive ? 'Aktif' : 'Nonaktif'}</span>
+        </div>
       ),
     },
     {
       key: 'createdAt',
-      header: 'Created',
-      cell: (item) => <AuditInfo createdAt={item.createdAt} />,
+      header: 'Dibuat',
+      cell: (item) => <AuditInfo createdAt={item.createdAt} createdBy={item.createdBy} />,
     },
   ];
 
   const tableActions: TableActions<Carousel> = {
+    onView: openViewDrawer,
     onEdit: openEditDrawer,
     onDelete: confirmDelete,
   };
@@ -207,148 +168,56 @@ export default function CarouselList() {
     <div className="w-full">
       <DataTable
         title="Carousel"
-        description="Manage homepage carousel slides."
+        description="Kelola slide carousel untuk halaman utama."
         headerAction={
           <Button onClick={openCreateDrawer}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Carousel
+            Tambah Carousel
           </Button>
         }
         data={carousels}
         columns={columns}
         actions={tableActions}
         loading={loading}
-        onRefresh={fetchData}
-        emptyMessage="No carousel items found."
+        isError={error}
+        onRefresh={handleRefresh}
+        searchPlaceholder="Cari carousel..."
+        searchValue={search}
+        onSearch={handleSearch}
+        emptyMessage="Tidak ada carousel."
         keyExtractor={(item) => item.uuid}
-        showPagination={false}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        onPageChange={handlePageChange}
+        itemsPerPage={limit}
+        onItemsPerPageChange={handleLimitChange}
+        showPagination={totalItems > 0}
       />
 
-      {/* Form Drawer */}
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent className="sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>
-              {drawerMode === 'create' ? 'Add Carousel' : 'Edit Carousel'}
-            </SheetTitle>
-            <SheetDescription>
-              {drawerMode === 'create'
-                ? 'Create a new carousel slide.'
-                : 'Edit carousel slide details.'}
-            </SheetDescription>
-          </SheetHeader>
+      {/* View Drawer */}
+      <CarouselViewDrawer
+        open={drawerOpen && drawerMode === 'view'}
+        onOpenChange={setDrawerOpen}
+        carousel={selectedItem}
+        onEdit={(item) => { closeDrawer(); setTimeout(() => openEditDrawer(item), 100); }}
+      />
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 mt-6">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter title" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {/* Create/Edit Form Drawer */}
+      <CarouselFormDrawer
+        open={drawerOpen && (drawerMode === 'create' || drawerMode === 'edit')}
+        onOpenChange={setDrawerOpen}
+        mode={drawerMode === 'create' || drawerMode === 'edit' ? drawerMode : null}
+        form={form}
+        onSubmit={handleSubmit}
+        loading={submitting}
+      />
 
-              <FormField
-                control={form.control}
-                name="subtitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subtitle (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Enter subtitle" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Image Path</FormLabel>
-                    <FormControl>
-                      <Input placeholder="/uploads/carousel/image.jpg" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="link"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Link (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="order"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Display Order</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <FormLabel>Active</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Show this carousel on the homepage
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={closeDrawer} className="flex-1">
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting} className="flex-1">
-                  {submitting ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </SheetContent>
-      </Sheet>
-
+      {/* Delete Confirmation */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Delete Carousel"
+        title="Hapus Carousel"
         itemName={itemToDelete?.title}
         onConfirm={handleDelete}
       />

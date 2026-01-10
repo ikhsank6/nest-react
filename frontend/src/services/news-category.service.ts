@@ -8,9 +8,8 @@ export interface NewsCategory {
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
-    _count?: {
-        news: number;
-    };
+    createdBy?: string | null;
+    _count?: { news: number };
 }
 
 export interface CreateNewsCategoryData {
@@ -28,8 +27,9 @@ export interface UpdateNewsCategoryData {
 }
 
 export const newsCategoryService = {
-    getAll: async (includeInactive = false): Promise<any> => {
-        const url = includeInactive ? '/cms/news-category?all=true' : '/cms/news-category';
+    getAll: async (page = 1, limit = 10, search?: string): Promise<any> => {
+        let url = `/cms/news-category?page=${page}&limit=${limit}&all=true`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
         const response = await api.get(url) as any;
         return response;
     },

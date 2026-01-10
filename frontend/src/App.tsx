@@ -66,7 +66,7 @@ export default function App() {
   }, [hydrate]);
 
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="light" storageKey="theme">
       <BrowserRouter>
         <Toaster
           position="top-right"

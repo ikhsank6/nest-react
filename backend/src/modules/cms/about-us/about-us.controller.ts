@@ -13,9 +13,22 @@ export class AboutUsController {
 
     @Get()
     @ApiOperation({ summary: 'Get all about us sections (public)' })
+    @ApiQuery({ name: 'page', required: false })
+    @ApiQuery({ name: 'limit', required: false })
+    @ApiQuery({ name: 'search', required: false })
     @ApiQuery({ name: 'all', required: false, description: 'Include inactive sections' })
-    findAll(@Query('all') all?: string) {
-        return this.aboutUsService.findAll(all === 'true');
+    findAll(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+        @Query('all') all?: string,
+    ) {
+        return this.aboutUsService.findAll(
+            page ? parseInt(page) : 1,
+            limit ? parseInt(limit) : 10,
+            search,
+            all === 'true',
+        );
     }
 
     @Get('section/:section')

@@ -4,24 +4,51 @@ import { CreateNewsCategoryDto, UpdateNewsCategoryDto } from './dto/news-categor
 
 @Injectable()
 export class NewsCategoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async findAll(includeInactive = false) {
-    const where = includeInactive ? { deletedAt: null } : { deletedAt: null, isActive: true };
-    
-    const categories = await this.prisma.newsCategory.findMany({
-      where,
-      include: {
-        _count: {
-          select: { news: { where: { deletedAt: null } } },
+  async findAll(page = 1, limit = 10, search?: string, includeInactive = false) {
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = { deletedAt: null };
+
+    if (!includeInactive) {
+      whereClause.isActive = true;
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { slug: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [categories, total] = await Promise.all([
+      this.prisma.newsCategory.findMany({
+        where: whereClause,
+        include: {
+          _count: {
+            select: { news: { where: { deletedAt: null } } },
+          },
         },
-      },
-      orderBy: { name: 'asc' },
-    });
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.newsCategory.count({ where: whereClause }),
+    ]);
 
     return {
       message: 'Daftar kategori berita berhasil diambil',
       data: categories,
+      meta: {
+        page: {
+          total,
+          current_page: page,
+          per_page: limit,
+          from: skip + 1,
+        },
+      },
     };
   }
 
@@ -48,7 +75,7 @@ export class NewsCategoryService {
   async create(dto: CreateNewsCategoryDto, createdBy?: string) {
     // Check if slug already exists
     const existing = await this.prisma.newsCategory.findFirst({
-      where: { 
+      where: {
         OR: [{ slug: dto.slug }, { name: dto.name }],
         deletedAt: null,
       },

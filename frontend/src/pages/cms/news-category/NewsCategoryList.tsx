@@ -1,47 +1,35 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { newsCategoryService, type NewsCategory } from '@/services/news-category.service';
 import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { showSuccess, showError } from '@/lib/utils';
+import { newsCategoryFormSchema, type NewsCategoryFormData } from '@/lib/cms-validations';
+import { useTable } from '@/hooks/useTable';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
+import { NewsCategoryFormDrawer, NewsCategoryViewDrawer } from '@/components/cms/news-category';
 import { AuditInfo } from '@/components/ui/audit-info';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 
-const categorySchema = z.object({
-  name: z.string().min(1, 'Name wajib diisi'),
-  slug: z.string().min(1, 'Slug wajib diisi').regex(/^[a-z0-9-]+$/, 'Slug hanya boleh huruf kecil, angka, dan dash'),
-  description: z.string().optional(),
-  isActive: z.boolean().optional(),
-});
-
-type CategoryFormData = z.infer<typeof categorySchema>;
-type DrawerMode = 'create' | 'edit' | null;
+type DrawerMode = 'create' | 'edit' | 'view' | null;
 
 export default function NewsCategoryList() {
-  const [categories, setCategories] = useState<NewsCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: categories,
+    loading,
+    error,
+    search,
+    page,
+    limit,
+    totalPages,
+    totalItems,
+    setPage,
+    setLimit,
+    setSearch,
+    refresh: fetchData,
+  } = useTable<NewsCategory>('newsCategories', useCallback((p, l, s) => newsCategoryService.getAll(p, l, s), []));
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedItem, setSelectedItem] = useState<NewsCategory | null>(null);
@@ -49,8 +37,8 @@ export default function NewsCategoryList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<NewsCategory | null>(null);
 
-  const form = useForm<CategoryFormData>({
-    resolver: zodResolver(categorySchema),
+  const form = useForm<NewsCategoryFormData>({
+    resolver: zodResolver(newsCategoryFormSchema),
     defaultValues: {
       name: '',
       slug: '',
@@ -59,43 +47,13 @@ export default function NewsCategoryList() {
     },
   });
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await newsCategoryService.getAll(true);
-      setCategories(response?.data || []);
-    } catch (error) {
-      showError(error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Auto-generate slug from name
-  const watchName = form.watch('name');
-  useEffect(() => {
-    if (drawerMode === 'create' && watchName) {
-      const slug = watchName
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-      form.setValue('slug', slug);
-    }
-  }, [watchName, drawerMode, form]);
+  const handleSearch = (val: string) => setSearch(val);
+  const handlePageChange = (p: number) => setPage(p);
+  const handleLimitChange = (l: number) => setLimit(l);
+  const handleRefresh = () => fetchData();
 
   const openCreateDrawer = () => {
-    form.reset({
-      name: '',
-      slug: '',
-      description: '',
-      isActive: true,
-    });
+    form.reset({ name: '', slug: '', description: '', isActive: true });
     setSelectedItem(null);
     setDrawerMode('create');
     setDrawerOpen(true);
@@ -113,13 +71,19 @@ export default function NewsCategoryList() {
     setDrawerOpen(true);
   };
 
+  const openViewDrawer = (item: NewsCategory) => {
+    setSelectedItem(item);
+    setDrawerMode('view');
+    setDrawerOpen(true);
+  };
+
   const closeDrawer = () => {
     setDrawerOpen(false);
     setDrawerMode(null);
     setSelectedItem(null);
   };
 
-  const handleSubmit = async (data: CategoryFormData) => {
+  const handleSubmit = async (data: NewsCategoryFormData) => {
     setSubmitting(true);
     try {
       if (drawerMode === 'create') {
@@ -131,8 +95,8 @@ export default function NewsCategoryList() {
       }
       closeDrawer();
       fetchData();
-    } catch (error) {
-      showError(error);
+    } catch (err) {
+      showError(err);
     } finally {
       setSubmitting(false);
     }
@@ -144,8 +108,8 @@ export default function NewsCategoryList() {
       await newsCategoryService.delete(itemToDelete.uuid);
       showSuccess('Kategori berhasil dihapus');
       fetchData();
-    } catch (error) {
-      showError(error);
+    } catch (err) {
+      showError(err);
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -159,48 +123,39 @@ export default function NewsCategoryList() {
 
   const columns: Column<NewsCategory>[] = [
     {
-      key: 'name',
-      header: 'Category',
+      key: 'info',
+      header: 'Kategori',
       cell: (item) => (
         <div className="flex flex-col">
           <span className="font-medium">{item.name}</span>
-          <span className="text-xs text-muted-foreground font-mono">/{item.slug}</span>
+          <span className="text-xs text-muted-foreground">{item.slug}</span>
         </div>
       ),
     },
     {
-      key: 'description',
-      header: 'Description',
-      cell: (item) => (
-        <span className="text-sm text-muted-foreground line-clamp-2">
-          {item.description || '-'}
-        </span>
-      ),
-    },
-    {
       key: 'newsCount',
-      header: 'News',
-      cell: (item) => (
-        <Badge variant="outline">{item._count?.news || 0} articles</Badge>
-      ),
+      header: 'Jumlah Berita',
+      cell: (item) => <span className="text-sm">{item._count?.news || 0}</span>,
     },
     {
       key: 'status',
       header: 'Status',
       cell: (item) => (
-        <Badge variant={item.isActive ? 'default' : 'secondary'}>
-          {item.isActive ? 'Active' : 'Inactive'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <div className={`h-2 w-2 rounded-full ${item.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+          <span className="text-sm">{item.isActive ? 'Aktif' : 'Nonaktif'}</span>
+        </div>
       ),
     },
     {
       key: 'createdAt',
-      header: 'Created',
-      cell: (item) => <AuditInfo createdAt={item.createdAt} />,
+      header: 'Dibuat',
+      cell: (item) => <AuditInfo createdAt={item.createdAt} createdBy={item.createdBy} />,
     },
   ];
 
   const tableActions: TableActions<NewsCategory> = {
+    onView: openViewDrawer,
     onEdit: openEditDrawer,
     onDelete: confirmDelete,
   };
@@ -208,117 +163,57 @@ export default function NewsCategoryList() {
   return (
     <div className="w-full">
       <DataTable
-        title="News Categories"
-        description="Manage news categories for organizing articles."
+        title="Kategori Berita"
+        description="Kelola kategori untuk berita."
         headerAction={
           <Button onClick={openCreateDrawer}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Category
+            Tambah Kategori
           </Button>
         }
         data={categories}
         columns={columns}
         actions={tableActions}
         loading={loading}
-        onRefresh={fetchData}
-        emptyMessage="No categories found."
+        isError={error}
+        onRefresh={handleRefresh}
+        searchPlaceholder="Cari kategori..."
+        searchValue={search}
+        onSearch={handleSearch}
+        emptyMessage="Tidak ada kategori."
         keyExtractor={(item) => item.uuid}
-        showPagination={false}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        onPageChange={handlePageChange}
+        itemsPerPage={limit}
+        onItemsPerPageChange={handleLimitChange}
+        showPagination={totalItems > 0}
       />
 
-      {/* Form Drawer */}
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent className="sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>
-              {drawerMode === 'create' ? 'Add Category' : 'Edit Category'}
-            </SheetTitle>
-            <SheetDescription>
-              {drawerMode === 'create'
-                ? 'Create a new news category.'
-                : 'Edit category details.'}
-            </SheetDescription>
-          </SheetHeader>
+      {/* View Drawer */}
+      <NewsCategoryViewDrawer
+        open={drawerOpen && drawerMode === 'view'}
+        onOpenChange={setDrawerOpen}
+        category={selectedItem}
+        onEdit={(item) => { closeDrawer(); setTimeout(() => openEditDrawer(item), 100); }}
+      />
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 mt-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter category name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      {/* Create/Edit Form Drawer */}
+      <NewsCategoryFormDrawer
+        open={drawerOpen && (drawerMode === 'create' || drawerMode === 'edit')}
+        onOpenChange={setDrawerOpen}
+        mode={drawerMode === 'create' || drawerMode === 'edit' ? drawerMode : null}
+        form={form}
+        onSubmit={handleSubmit}
+        loading={submitting}
+      />
 
-              <FormField
-                control={form.control}
-                name="slug"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Slug</FormLabel>
-                    <FormControl>
-                      <Input placeholder="category-slug" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Enter description" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <FormLabel>Active</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Show this category on the website
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={closeDrawer} className="flex-1">
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={submitting} className="flex-1">
-                  {submitting ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </SheetContent>
-      </Sheet>
-
+      {/* Delete Confirmation */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Delete Category"
+        title="Hapus Kategori"
         itemName={itemToDelete?.name}
         onConfirm={handleDelete}
       />

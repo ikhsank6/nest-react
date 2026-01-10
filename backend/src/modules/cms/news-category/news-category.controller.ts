@@ -9,13 +9,26 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 @ApiTags('CMS - News Category')
 @Controller('cms/news-category')
 export class NewsCategoryController {
-  constructor(private readonly newsCategoryService: NewsCategoryService) {}
+  constructor(private readonly newsCategoryService: NewsCategoryService) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all news categories (public)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'all', required: false, description: 'Include inactive categories' })
-  findAll(@Query('all') all?: string) {
-    return this.newsCategoryService.findAll(all === 'true');
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('all') all?: string,
+  ) {
+    return this.newsCategoryService.findAll(
+      page ? parseInt(page) : 1,
+      limit ? parseInt(limit) : 10,
+      search,
+      all === 'true',
+    );
   }
 
   @Get(':uuid')

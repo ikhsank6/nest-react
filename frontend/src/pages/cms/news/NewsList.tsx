@@ -7,8 +7,8 @@ import { newsCategoryService, type NewsCategory } from '@/services/news-category
 import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Eye, Image as ImageIcon } from 'lucide-react';
-import { showSuccess, showError } from '@/lib/utils';
+import { Plus, Eye, Image as ImageIcon, Newspaper } from 'lucide-react';
+import { showSuccess, showError, formatDateTime } from '@/lib/utils';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
 import { AuditInfo } from '@/components/ui/audit-info';
 import { useTable } from '@/hooks/useTable';
@@ -39,19 +39,20 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
 const newsSchema = z.object({
-  title: z.string().min(1, 'Title wajib diisi'),
+  title: z.string().min(1, 'Judul wajib diisi'),
   slug: z.string().min(1, 'Slug wajib diisi').regex(/^[a-z0-9-]+$/, 'Slug hanya boleh huruf kecil, angka, dan dash'),
   excerpt: z.string().optional(),
-  content: z.string().min(1, 'Content wajib diisi'),
+  content: z.string().min(1, 'Konten wajib diisi'),
   image: z.string().optional(),
-  categoryUuid: z.string().min(1, 'Category wajib dipilih'),
+  categoryUuid: z.string().min(1, 'Kategori wajib dipilih'),
   isPublished: z.boolean().optional(),
 });
 
 type NewsFormData = z.infer<typeof newsSchema>;
-type DrawerMode = 'create' | 'edit' | null;
+type DrawerMode = 'create' | 'edit' | 'view' | null;
 
 export default function NewsList() {
+  // Use table hook for data with pagination
   const {
     data: news,
     loading,
@@ -67,14 +68,20 @@ export default function NewsList() {
     refresh: fetchNews,
   } = useTable<News>('news', useCallback((p, l, s) => newsService.getAll(p, l, s, undefined, true), []));
 
+  // Categories state
   const [categories, setCategories] = useState<NewsCategory[]>([]);
+
+  // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedItem, setSelectedItem] = useState<News | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<News | null>(null);
 
+  // Form
   const form = useForm<NewsFormData>({
     resolver: zodResolver(newsSchema),
     defaultValues: {
@@ -96,8 +103,8 @@ export default function NewsList() {
     try {
       const response = await newsCategoryService.getAll(true);
       setCategories(response?.data || []);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
     }
   };
 
@@ -114,6 +121,23 @@ export default function NewsList() {
       form.setValue('slug', slug);
     }
   }, [watchTitle, drawerMode, form]);
+
+  const handleSearch = (val: string) => {
+    setSearch(val);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+  };
+
+  const handleRefresh = () => {
+    fetchNews();
+    fetchCategories();
+  };
 
   const openCreateDrawer = () => {
     form.reset({
@@ -145,6 +169,12 @@ export default function NewsList() {
     setDrawerOpen(true);
   };
 
+  const openViewDrawer = (item: News) => {
+    setSelectedItem(item);
+    setDrawerMode('view');
+    setDrawerOpen(true);
+  };
+
   const closeDrawer = () => {
     setDrawerOpen(false);
     setDrawerMode(null);
@@ -163,8 +193,8 @@ export default function NewsList() {
       }
       closeDrawer();
       fetchNews();
-    } catch (error) {
-      showError(error);
+    } catch (err) {
+      showError(err);
     } finally {
       setSubmitting(false);
     }
@@ -176,8 +206,8 @@ export default function NewsList() {
       await newsService.delete(itemToDelete.uuid);
       showSuccess('Berita berhasil dihapus');
       fetchNews();
-    } catch (error) {
-      showError(error);
+    } catch (err) {
+      showError(err);
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -189,6 +219,7 @@ export default function NewsList() {
     setDeleteDialogOpen(true);
   };
 
+  // Table columns
   const columns: Column<News>[] = [
     {
       key: 'image',
@@ -205,7 +236,7 @@ export default function NewsList() {
     },
     {
       key: 'title',
-      header: 'Title',
+      header: 'Berita',
       cell: (item) => (
         <div className="flex flex-col max-w-md">
           <span className="font-medium line-clamp-1">{item.title}</span>
@@ -215,18 +246,21 @@ export default function NewsList() {
     },
     {
       key: 'category',
-      header: 'Category',
+      header: 'Kategori',
       cell: (item) => (
-        <Badge variant="outline">{item.category?.name || '-'}</Badge>
+        <Badge variant="outline" className="font-normal">
+          {item.category?.name || '-'}
+        </Badge>
       ),
     },
     {
       key: 'status',
       header: 'Status',
       cell: (item) => (
-        <Badge variant={item.isPublished ? 'default' : 'secondary'}>
-          {item.isPublished ? 'Published' : 'Draft'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <div className={`h-2 w-2 rounded-full ${item.isPublished ? 'bg-green-500' : 'bg-amber-500'}`} />
+          <span className="text-sm">{item.isPublished ? 'Published' : 'Draft'}</span>
+        </div>
       ),
     },
     {
@@ -235,64 +269,143 @@ export default function NewsList() {
       cell: (item) => (
         <div className="flex items-center gap-1 text-muted-foreground">
           <Eye className="h-3 w-3" />
-          <span className="text-sm">{item.viewCount}</span>
+          <span className="text-sm font-mono">{item.viewCount}</span>
         </div>
       ),
     },
     {
       key: 'createdAt',
-      header: 'Created',
+      header: 'Created At',
       cell: (item) => <AuditInfo createdAt={item.createdAt} />,
     },
   ];
 
-  const tableActions: TableActions<News> = {
+  // Table actions
+  const getTableActions = (): TableActions<News> => ({
+    onView: openViewDrawer,
     onEdit: openEditDrawer,
     onDelete: confirmDelete,
-  };
+  });
 
   return (
     <div className="w-full">
       <DataTable
-        title="News"
-        description="Manage news articles and publications."
+        title="Berita"
+        description="Kelola artikel berita dan publikasi."
         headerAction={
           <Button onClick={openCreateDrawer}>
             <Plus className="mr-2 h-4 w-4" />
-            Add News
+            Tambah Berita
           </Button>
         }
         data={news}
         columns={columns}
-        actions={tableActions}
+        actions={getTableActions()}
         loading={loading}
         isError={error}
-        onRefresh={fetchNews}
-        searchPlaceholder="Search news..."
+        onRefresh={handleRefresh}
+        searchPlaceholder="Cari berita..."
         searchValue={search}
-        onSearch={setSearch}
-        emptyMessage="No news found."
+        onSearch={handleSearch}
+        emptyMessage="Tidak ada berita ditemukan."
         keyExtractor={(item) => item.uuid}
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
         itemsPerPage={limit}
-        onItemsPerPageChange={setLimit}
+        onItemsPerPageChange={handleLimitChange}
         showPagination={totalItems > 0}
       />
 
-      {/* Form Drawer */}
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+      {/* View Drawer */}
+      <Sheet open={drawerOpen && drawerMode === 'view'} onOpenChange={setDrawerOpen}>
+        <SheetContent className="sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Detail Berita</SheetTitle>
+            <SheetDescription>Informasi lengkap artikel berita</SheetDescription>
+          </SheetHeader>
+          
+          {selectedItem && (
+            <div className="mt-6 space-y-4">
+              {selectedItem.image && (
+                <div className="rounded-lg overflow-hidden">
+                  <img src={selectedItem.image} alt={selectedItem.title} className="w-full h-48 object-cover" />
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold">{selectedItem.title}</h3>
+                  <p className="text-sm text-muted-foreground font-mono">/{selectedItem.slug}</p>
+                </div>
+                
+                <div className="flex flex-wrap gap-4">
+                  <Badge variant="outline">{selectedItem.category?.name || '-'}</Badge>
+                  <Badge variant={selectedItem.isPublished ? 'default' : 'secondary'}>
+                    {selectedItem.isPublished ? 'Published' : 'Draft'}
+                  </Badge>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Eye className="h-3 w-3" />
+                    <span className="text-sm">{selectedItem.viewCount} views</span>
+                  </div>
+                </div>
+                
+                {selectedItem.excerpt && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Ringkasan</label>
+                    <p className="mt-1 text-sm">{selectedItem.excerpt}</p>
+                  </div>
+                )}
+                
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Konten</label>
+                  <div className="mt-1 p-3 bg-muted rounded-lg text-sm max-h-48 overflow-y-auto">
+                    {selectedItem.content}
+                  </div>
+                </div>
+                
+                {selectedItem.publishedAt && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Dipublikasikan</label>
+                    <p className="text-sm">{formatDateTime(selectedItem.publishedAt)}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={closeDrawer} 
+                  className="flex-1"
+                >
+                  Tutup
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={() => { closeDrawer(); setTimeout(() => openEditDrawer(selectedItem), 100); }} 
+                  className="flex-1"
+                >
+                  Edit
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Create/Edit Form Drawer */}
+      <Sheet open={drawerOpen && (drawerMode === 'create' || drawerMode === 'edit')} onOpenChange={setDrawerOpen}>
         <SheetContent className="sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
-              {drawerMode === 'create' ? 'Add News' : 'Edit News'}
+              {drawerMode === 'create' ? 'Tambah Berita' : 'Edit Berita'}
             </SheetTitle>
             <SheetDescription>
               {drawerMode === 'create'
-                ? 'Create a new news article.'
-                : 'Edit news article details.'}
+                ? 'Buat artikel berita baru.'
+                : 'Edit detail artikel berita.'}
             </SheetDescription>
           </SheetHeader>
 
@@ -303,9 +416,9 @@ export default function NewsList() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title</FormLabel>
+                    <FormLabel>Judul</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter news title" {...field} />
+                      <Input placeholder="Masukkan judul berita" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -331,11 +444,11 @@ export default function NewsList() {
                 name="categoryUuid"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
+                    <FormLabel>Kategori</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Pilih kategori" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -356,9 +469,9 @@ export default function NewsList() {
                 name="excerpt"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Excerpt (Optional)</FormLabel>
+                    <FormLabel>Ringkasan (Opsional)</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Short description..." rows={2} {...field} />
+                      <Textarea placeholder="Deskripsi singkat berita..." rows={2} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -370,9 +483,9 @@ export default function NewsList() {
                 name="content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Content</FormLabel>
+                    <FormLabel>Konten</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="News content..." rows={8} {...field} />
+                      <Textarea placeholder="Isi berita..." rows={8} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -384,7 +497,7 @@ export default function NewsList() {
                 name="image"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Featured Image (Optional)</FormLabel>
+                    <FormLabel>Featured Image (Opsional)</FormLabel>
                     <FormControl>
                       <Input placeholder="/uploads/news/image.jpg" {...field} />
                     </FormControl>
@@ -399,9 +512,9 @@ export default function NewsList() {
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-lg border p-3">
                     <div>
-                      <FormLabel>Publish</FormLabel>
+                      <FormLabel>Publikasikan</FormLabel>
                       <p className="text-sm text-muted-foreground">
-                        Make this article visible to the public
+                        Tampilkan artikel ini ke publik
                       </p>
                     </div>
                     <FormControl>
@@ -413,10 +526,10 @@ export default function NewsList() {
 
               <div className="flex gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={closeDrawer} className="flex-1">
-                  Cancel
+                  Batal
                 </Button>
                 <Button type="submit" disabled={submitting} className="flex-1">
-                  {submitting ? 'Saving...' : 'Save'}
+                  {submitting ? 'Menyimpan...' : 'Simpan'}
                 </Button>
               </div>
             </form>
@@ -424,10 +537,11 @@ export default function NewsList() {
         </SheetContent>
       </Sheet>
 
+      {/* Delete Confirmation Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Delete News"
+        title="Hapus Berita"
         itemName={itemToDelete?.title}
         onConfirm={handleDelete}
       />
