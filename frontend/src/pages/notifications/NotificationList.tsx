@@ -5,7 +5,7 @@ import { DataTable, type Column, type TableActions } from '@/components/ui/data-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Check, Bell, Info, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/lib/utils';
 import { useTable } from '@/hooks/useTable';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -122,11 +122,11 @@ export default function NotificationList() {
       await notificationService.markAsRead([uuid]);
       refresh();
       if (showToast) {
-        toast.success('Notifikasi ditandai sebagai dibaca');
+        showSuccess('Notifikasi ditandai sebagai dibaca');
       }
     } catch (error) {
       if (showToast) {
-        toast.error('Gagal menandai notifikasi');
+        showError(error);
       }
     }
   };
@@ -135,9 +135,9 @@ export default function NotificationList() {
     try {
       await notificationService.markAllAsRead();
       refresh();
-      toast.success('Semua notifikasi ditandai sebagai dibaca');
+      showSuccess('Semua notifikasi ditandai sebagai dibaca');
     } catch (error) {
-      toast.error('Gagal menandai semua notifikasi');
+      showError(error);
     }
   };
 
@@ -146,10 +146,10 @@ export default function NotificationList() {
     try {
       await notificationService.delete(notificationToDelete.uuid);
       refresh();
-      toast.success('Notifikasi berhasil dihapus');
+      showSuccess('Notifikasi berhasil dihapus');
       setDeleteDialogOpen(false);
     } catch (error) {
-      toast.error('Gagal menghapus notifikasi');
+      showError(error);
     }
   };
 

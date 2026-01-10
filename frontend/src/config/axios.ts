@@ -3,6 +3,7 @@ import { env } from './env';
 import { toast } from 'sonner';
 import { cookieUtils } from '@/lib/cookies';
 import { useAuthStore } from '@/stores/auth.store';
+import { getErrorMessage } from '@/lib/utils';
 
 const api = axios.create({
   baseURL: env.API_URL,
@@ -41,15 +42,9 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    const meta = error.response?.data?.meta;
-    
-    if (meta) {
-      toast.error(`${meta.message} (${meta.error})`);
-    } else if (error.message === 'Network Error') {
-      toast.error('Tidak dapat terhubung ke server');
-    } else {
-      toast.error('Terjadi kesalahan');
-    }
+    // Use centralized error message extraction
+    const message = getErrorMessage(error);
+    toast.error(message);
 
     // Handle 401 - logout and redirect to login
     if (error.response?.status === 401) {

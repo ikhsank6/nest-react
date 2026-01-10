@@ -5,7 +5,7 @@ import { roleService, type Role } from '@/services/role.service';
 import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/lib/utils';
 import { createRoleSchema, type CreateRoleFormData } from '@/lib/validations';
 import { useTable } from '@/hooks/useTable';
 import { RoleViewDrawer } from '@/components/roles/RoleViewDrawer';
@@ -116,16 +116,16 @@ export default function RoleList() {
     try {
       if (drawerMode === 'create') {
         await roleService.create(data);
-        toast.success('Role berhasil dibuat');
+        showSuccess('Role berhasil dibuat');
       } else if (drawerMode === 'edit' && selectedRole) {
         await roleService.update(selectedRole.uuid, data);
-        toast.success('Role berhasil diupdate');
+        showSuccess('Role berhasil diupdate');
       }
       
       closeDrawer();
       fetchRoles();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Terjadi kesalahan');
+      showError(error);
     } finally {
       setSubmitting(false);
     }
@@ -136,10 +136,10 @@ export default function RoleList() {
     
     try {
       await roleService.delete(roleToDelete.uuid);
-      toast.success('Role berhasil dihapus');
+      showSuccess('Role berhasil dihapus');
       fetchRoles();
     } catch (error) {
-      toast.error('Gagal menghapus role');
+      showError(error);
     } finally {
       setDeleteDialogOpen(false);
       setRoleToDelete(null);

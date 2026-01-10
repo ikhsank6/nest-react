@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/auth.service';
 import { registerSchema, type RegisterFormData } from '@/lib/validations';
-import { toast } from 'sonner';
+import { showSuccess } from '@/lib/utils';
 import { Eye, EyeOff, Mail, Lock, User, Loader2, LayoutDashboard, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,7 +51,7 @@ export default function Register() {
       });
       setRegisteredEmail(data.email);
       setRegistrationSuccess(true);
-      toast.success('Registrasi berhasil! Silakan cek email Anda.');
+      showSuccess('Registrasi berhasil! Silakan cek email Anda.');
     } catch (error) {
       // Error handled by axios interceptor
     } finally {

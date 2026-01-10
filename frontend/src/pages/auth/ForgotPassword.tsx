@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/auth.service';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations';
-import { toast } from 'sonner';
+import { showSuccess } from '@/lib/utils';
 import { Mail, ArrowLeft, Loader2, LayoutDashboard, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,7 @@ export default function ForgotPassword() {
       await authService.forgotPassword(data.email);
       setSubmittedEmail(data.email);
       setSent(true);
-      toast.success('Instruksi reset password telah dikirim');
+      showSuccess('Instruksi reset password telah dikirim');
     } catch (error) {
       // Error handled by axios interceptor
     } finally {

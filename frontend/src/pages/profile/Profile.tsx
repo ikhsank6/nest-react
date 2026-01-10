@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { toast } from 'sonner';
+import { showSuccess, showError, showErrorMessage } from '@/lib/utils';
 import { Camera, Lock, Mail, User as UserIcon, Loader2, CheckCircle2, X, Eye, EyeOff } from 'lucide-react';
 import { PasswordStrengthMeter } from '@/components/ui/password-strength-meter';
 import { profileService } from '@/services/profile.service';
@@ -76,9 +76,9 @@ export default function Profile() {
       setIsLoading(true);
       const updatedUser = await profileService.updateProfile(data);
       updateUser(updatedUser);
-      toast.success('Profil berhasil diperbarui');
+      showSuccess('Profil berhasil diperbarui');
     } catch (error: any) {
-      toast.error(error.response?.data?.meta?.message || 'Gagal memperbarui profil');
+      showError(error);
     } finally {
       setIsLoading(false);
     }
@@ -91,10 +91,10 @@ export default function Profile() {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
-      toast.success('Password berhasil diubah');
+      showSuccess('Password berhasil diubah');
       passwordForm.reset();
     } catch (error: any) {
-      toast.error(error.response?.data?.meta?.message || 'Gagal mengubah password');
+      showError(error);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +109,7 @@ export default function Profile() {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Ukuran file maksimal 2MB');
+      showErrorMessage('Ukuran file maksimal 2MB');
       return;
     }
 
@@ -117,9 +117,9 @@ export default function Profile() {
       setIsAvatarLoading(true);
       const updatedUser = await profileService.updateAvatar(file);
       updateUser(updatedUser);
-      toast.success('Foto profil berhasil diubah');
+      showSuccess('Foto profil berhasil diubah');
     } catch (error: any) {
-      toast.error(error.response?.data?.meta?.message || 'Gagal mengubah foto profil');
+      showError(error);
     } finally {
       setIsAvatarLoading(false);
     }
@@ -134,9 +134,9 @@ export default function Profile() {
       const updatedUser = await profileService.deleteAvatar(user.uuid);
       updateUser(updatedUser);
       setAvatarBlobUrl(undefined); // Clear blob url
-      toast.success('Foto profil berhasil dihapus');
+      showSuccess('Foto profil berhasil dihapus');
     } catch (error: any) {
-      toast.error(error.response?.data?.meta?.message || 'Gagal menghapus foto profil');
+      showError(error);
     } finally {
       setIsAvatarLoading(false);
     }

@@ -5,7 +5,7 @@ import { menuService, type Menu } from '@/services/menu.service';
 import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/lib/utils';
 import { createMenuSchema, type CreateMenuFormData } from '@/lib/validations';
 import { useTable } from '@/hooks/useTable';
 import { MenuViewDrawer } from '@/components/menus/MenuViewDrawer';
@@ -88,9 +88,9 @@ export default function MenuList() {
           parentUuid: m.parent?.uuid // Preserve parent
         }));
         await menuService.reorder(items);
-        toast.success('Urutan menu berhasil diperbarui');
+        showSuccess('Urutan menu berhasil diperbarui');
       } catch (error) {
-        toast.error('Gagal memperbarui urutan menu');
+        showError(error);
         fetchMenus(); // Revert by fetching
       }
   };
@@ -125,10 +125,10 @@ export default function MenuList() {
         parentUuid: newParentId
       }];
       await menuService.reorder(items);
-      toast.success(`${menuToMove.name} dipindahkan ke ${newParent.name}`);
+      showSuccess(`${menuToMove.name} dipindahkan ke ${newParent.name}`);
       fetchMenus(); // Refresh to get proper order
     } catch (error) {
-      toast.error('Gagal memindahkan menu');
+      showError(error);
       fetchMenus(); // Revert by fetching
     }
   };
@@ -181,16 +181,16 @@ export default function MenuList() {
     try {
       if (drawerMode === 'create') {
         await menuService.create(data);
-        toast.success('Menu berhasil dibuat');
+        showSuccess('Menu berhasil dibuat');
       } else if (drawerMode === 'edit' && selectedMenu) {
         await menuService.update(selectedMenu.uuid, data);
-        toast.success('Menu berhasil diupdate');
+        showSuccess('Menu berhasil diupdate');
       }
       
       closeDrawer();
       fetchMenus();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Terjadi kesalahan');
+      showError(error);
     } finally {
       setSubmitting(false);
     }
@@ -201,10 +201,10 @@ export default function MenuList() {
     
     try {
       await menuService.delete(menuToDelete.uuid);
-      toast.success('Menu berhasil dihapus');
+      showSuccess('Menu berhasil dihapus');
       fetchMenus();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Gagal menghapus menu');
+      showError(error);
     } finally {
       setDeleteDialogOpen(false);
       setMenuToDelete(null);

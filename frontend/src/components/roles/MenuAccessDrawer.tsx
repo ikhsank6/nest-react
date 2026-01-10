@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
 import { Loader2, ChevronRight, ChevronDown, Folder, File } from 'lucide-react';
 import { type Role } from '@/services/role.service';
 import { menuService, type Menu } from '@/services/menu.service';
 import { menuAccessService } from '@/services/menu-access.service';
-import { cn } from '@/lib/utils';
+import { cn, showSuccess, showError } from '@/lib/utils';
 
 interface MenuAccessDrawerProps {
   open: boolean;
@@ -142,7 +141,7 @@ export function MenuAccessDrawer({ open, onOpenChange, role }: MenuAccessDrawerP
       setAccessMap(initialMap);
       setParentMap(initialParentMap);
     } catch (error) {
-      toast.error('Gagal memuat data menu access');
+      showError(error);
     } finally {
       setLoading(false);
     }
@@ -201,10 +200,10 @@ export function MenuAccessDrawer({ open, onOpenChange, role }: MenuAccessDrawerP
         menuUuids,
       });
 
-      toast.success('Hak akses berhasil disimpan');
+      showSuccess('Hak akses berhasil disimpan');
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Gagal menyimpan hak akses');
+      showError(error);
     } finally {
       setSaving(false);
     }

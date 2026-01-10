@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/auth.service';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/lib/validations';
-import { toast } from 'sonner';
+import { showSuccess, showErrorMessage } from '@/lib/utils';
 import { Lock, Eye, EyeOff, Loader2, LayoutDashboard, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,7 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (!token) {
-      toast.error('Token reset password tidak ditemukan');
+      showErrorMessage('Token reset password tidak ditemukan');
       navigate('/login');
     }
   }, [token, navigate]);
@@ -53,7 +53,7 @@ export default function ResetPassword() {
     try {
       await authService.resetPassword(token, data.password);
       setSuccess(true);
-      toast.success('Password berhasil diupdate');
+      showSuccess('Password berhasil diupdate');
     } catch (error) {
       // Error handled by axios interceptor
     } finally {

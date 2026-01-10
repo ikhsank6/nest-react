@@ -14,8 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { cn, showSuccess, showError } from '@/lib/utils';
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -52,7 +51,7 @@ export function NotificationBell() {
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
-      toast.error('Gagal menandai notifikasi sebagai dibaca');
+      showError(error);
     }
   };
 
@@ -61,9 +60,9 @@ export function NotificationBell() {
       await notificationService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      toast.success('Semua notifikasi ditandai sebagai dibaca');
+      showSuccess('Semua notifikasi ditandai sebagai dibaca');
     } catch (error) {
-      toast.error('Gagal menandai semua notifikasi');
+      showError(error);
     }
   };
 
@@ -75,9 +74,9 @@ export function NotificationBell() {
       if (!notifications.find(n => n.uuid === uuid)?.isRead) {
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
-      toast.success('Notifikasi dihapus');
+      showSuccess('Notifikasi dihapus');
     } catch (error) {
-      toast.error('Gagal menghapus notifikasi');
+      showError(error);
     }
   };
 

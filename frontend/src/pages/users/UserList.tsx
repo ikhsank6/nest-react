@@ -7,7 +7,7 @@ import { DataTable, type Column, type TableActions } from '@/components/ui/data-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus, Mail } from 'lucide-react';
-import { toast } from 'sonner';
+import { showSuccess, showError } from '@/lib/utils';
 import { userFormSchema, type UserFormData } from '@/lib/validations';
 import { useTable } from '@/hooks/useTable';
 import { UserViewDrawer } from '@/components/users/UserViewDrawer';
@@ -144,16 +144,16 @@ export default function UserList() {
 
       if (drawerMode === 'create') {
         await userService.create(submitData);
-        toast.success(data.isActive ? 'User berhasil dibuat' : 'User berhasil dibuat. Email verifikasi telah dikirim.');
+        showSuccess(data.isActive ? 'User berhasil dibuat' : 'User berhasil dibuat. Email verifikasi telah dikirim.');
       } else if (drawerMode === 'edit' && selectedUser) {
         await userService.update(selectedUser.uuid, submitData);
-        toast.success('User berhasil diupdate');
+        showSuccess('User berhasil diupdate');
       }
       
       closeDrawer();
       fetchUsers();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Terjadi kesalahan');
+      showError(error);
     } finally {
       setSubmitting(false);
     }
@@ -164,10 +164,10 @@ export default function UserList() {
     
     try {
       await userService.delete(userToDelete.uuid);
-      toast.success('User berhasil dihapus');
+      showSuccess('User berhasil dihapus');
       fetchUsers();
     } catch (error) {
-      toast.error('Gagal menghapus user');
+      showError(error);
     } finally {
       setDeleteDialogOpen(false);
       setUserToDelete(null);
@@ -182,9 +182,9 @@ export default function UserList() {
   const handleResendVerification = async (user: User) => {
     try {
       await userService.resendVerification(user.uuid);
-      toast.success(`Email verifikasi telah dikirim ke ${user.email}`);
+      showSuccess(`Email verifikasi telah dikirim ke ${user.email}`);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Gagal mengirim email verifikasi');
+      showError(error);
     }
   };
 

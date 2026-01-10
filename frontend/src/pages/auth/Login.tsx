@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { authService } from '@/services/auth.service';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
-import { toast } from 'sonner';
+import { showSuccess, showErrorMessage } from '@/lib/utils';
 import { Eye, EyeOff, Mail, Lock, Loader2, LayoutDashboard, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,7 @@ export default function Login() {
     setNotVerified(false);
     try {
       await authService.login(data);
-      toast.success('Login berhasil');
+      showSuccess('Login berhasil');
       navigate('/dashboard');
     } catch (error: any) {
       const message = error?.response?.data?.message || '';
@@ -58,10 +58,10 @@ export default function Login() {
     setResending(true);
     try {
       await authService.resendVerification(notVerifiedEmail);
-      toast.success('Link verifikasi telah dikirim ke email Anda');
+      showSuccess('Link verifikasi telah dikirim ke email Anda');
       setNotVerified(false);
     } catch (error) {
-      toast.error('Gagal mengirim ulang email verifikasi');
+      showErrorMessage('Gagal mengirim ulang email verifikasi');
     } finally {
       setResending(false);
     }
