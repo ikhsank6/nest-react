@@ -12,6 +12,7 @@ import { EmailModule } from './modules/email/email.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ProfileModule } from './modules/profile/profile.module';
+import { CmsModule } from './modules/cms/cms.module';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 
 @Module({
@@ -30,6 +31,7 @@ import { RequestContextInterceptor } from './common/interceptors/request-context
     MenuAccessModule,
     NotificationsModule,
     ProfileModule,
+    CmsModule,
   ],
   providers: [
     {
@@ -38,4 +40,5 @@ import { RequestContextInterceptor } from './common/interceptors/request-context
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
+

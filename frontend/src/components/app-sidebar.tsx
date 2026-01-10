@@ -24,6 +24,9 @@ import {
   Layers,
   PieChart,
   BarChart,
+  Image,
+  Newspaper,
+  Info,
   type LucideIcon,
 } from "lucide-react"
 
@@ -90,6 +93,9 @@ const iconMap: Record<string, LucideIcon> = {
   PieChart,
   BarChart,
   Bell,
+  Image,
+  Newspaper,
+  Info,
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

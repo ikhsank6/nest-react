@@ -15,6 +15,11 @@ import MenuList from '@/pages/master-data/menus/MenuList';
 import NotificationList from '@/pages/notifications/NotificationList';
 import Profile from '@/pages/profile/Profile';
 import Forbidden from '@/pages/errors/Forbidden';
+// CMS Pages
+import CarouselList from '@/pages/cms/carousel/CarouselList';
+import NewsCategoryList from '@/pages/cms/news-category/NewsCategoryList';
+import NewsList from '@/pages/cms/news/NewsList';
+import AboutUsList from '@/pages/cms/about-us/AboutUsList';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -108,6 +113,12 @@ export default function App() {
             <Route path="master-data/roles" element={<MenuProtectedRoute><RoleList /></MenuProtectedRoute>} />
             <Route path="master-data/menus" element={<MenuProtectedRoute><MenuList /></MenuProtectedRoute>} />
             
+            {/* CMS Routes */}
+            <Route path="cms/carousel" element={<MenuProtectedRoute><CarouselList /></MenuProtectedRoute>} />
+            <Route path="cms/news-category" element={<MenuProtectedRoute><NewsCategoryList /></MenuProtectedRoute>} />
+            <Route path="cms/news" element={<MenuProtectedRoute><NewsList /></MenuProtectedRoute>} />
+            <Route path="cms/about-us" element={<MenuProtectedRoute><AboutUsList /></MenuProtectedRoute>} />
+            
             <Route path="notifications" element={<NotificationList />} />
             <Route path="profile" element={<Profile />} />
             
@@ -120,3 +131,4 @@ export default function App() {
     </ThemeProvider>
   );
 }
+

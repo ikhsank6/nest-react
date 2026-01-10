@@ -1,0 +1,225 @@
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { CreateNewsDto, UpdateNewsDto } from './dto/news.dto';
+
+@Injectable()
+export class NewsService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAll(page = 1, limit = 10, search?: string, categorySlug?: string, publishedOnly = true) {
+    const skip = (page - 1) * limit;
+    
+    const whereClause: any = { deletedAt: null };
+    
+    if (publishedOnly) {
+      whereClause.isPublished = true;
+    }
+    
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { excerpt: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    if (categorySlug) {
+      whereClause.category = { slug: categorySlug, deletedAt: null };
+    }
+
+    const [news, total] = await Promise.all([
+      this.prisma.news.findMany({
+        where: whereClause,
+        include: {
+          category: {
+            select: { uuid: true, name: true, slug: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.news.count({ where: whereClause }),
+    ]);
+
+    return {
+      message: 'Daftar berita berhasil diambil',
+      data: news,
+      meta: {
+        page: {
+          total,
+          current_page: page,
+          per_page: limit,
+          from: skip + 1,
+        },
+      },
+    };
+  }
+
+  async findOne(uuid: string) {
+    const news = await this.prisma.news.findFirst({
+      where: { uuid, deletedAt: null },
+      include: {
+        category: {
+          select: { uuid: true, name: true, slug: true },
+        },
+      },
+    });
+
+    if (!news) {
+      throw new NotFoundException('Berita tidak ditemukan');
+    }
+
+    return {
+      message: 'Detail berita berhasil diambil',
+      data: news,
+    };
+  }
+
+  async findBySlug(slug: string) {
+    const news = await this.prisma.news.findFirst({
+      where: { slug, deletedAt: null, isPublished: true },
+      include: {
+        category: {
+          select: { uuid: true, name: true, slug: true },
+        },
+      },
+    });
+
+    if (!news) {
+      throw new NotFoundException('Berita tidak ditemukan');
+    }
+
+    // Increment view count
+    await this.prisma.news.update({
+      where: { id: news.id },
+      data: { viewCount: { increment: 1 } },
+    });
+
+    return {
+      message: 'Detail berita berhasil diambil',
+      data: { ...news, viewCount: news.viewCount + 1 },
+    };
+  }
+
+  async create(dto: CreateNewsDto, createdBy?: string) {
+    // Check if slug already exists
+    const existing = await this.prisma.news.findFirst({
+      where: { slug: dto.slug, deletedAt: null },
+    });
+
+    if (existing) {
+      throw new ConflictException('Slug berita sudah digunakan');
+    }
+
+    // Get category ID from UUID
+    const category = await this.prisma.newsCategory.findFirst({
+      where: { uuid: dto.categoryUuid, deletedAt: null },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Kategori tidak ditemukan');
+    }
+
+    const { categoryUuid, ...newsData } = dto;
+
+    const news = await this.prisma.news.create({
+      data: {
+        ...newsData,
+        categoryId: category.id,
+        publishedAt: dto.isPublished ? new Date() : null,
+        createdBy,
+        updatedBy: createdBy,
+      },
+      include: {
+        category: {
+          select: { uuid: true, name: true, slug: true },
+        },
+      },
+    });
+
+    return {
+      message: 'Berita berhasil dibuat',
+      data: news,
+    };
+  }
+
+  async update(uuid: string, dto: UpdateNewsDto, updatedBy?: string) {
+    const existing = await this.prisma.news.findFirst({
+      where: { uuid, deletedAt: null },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Berita tidak ditemukan');
+    }
+
+    // Check for duplicate slug
+    if (dto.slug) {
+      const duplicate = await this.prisma.news.findFirst({
+        where: { slug: dto.slug, id: { not: existing.id }, deletedAt: null },
+      });
+
+      if (duplicate) {
+        throw new ConflictException('Slug berita sudah digunakan');
+      }
+    }
+
+    const updateData: any = { ...dto, updatedBy };
+    delete updateData.categoryUuid;
+
+    // Handle category change
+    if (dto.categoryUuid) {
+      const category = await this.prisma.newsCategory.findFirst({
+        where: { uuid: dto.categoryUuid, deletedAt: null },
+      });
+
+      if (!category) {
+        throw new NotFoundException('Kategori tidak ditemukan');
+      }
+
+      updateData.categoryId = category.id;
+    }
+
+    // Handle publish status change
+    if (dto.isPublished !== undefined && dto.isPublished && !existing.publishedAt) {
+      updateData.publishedAt = new Date();
+    }
+
+    const news = await this.prisma.news.update({
+      where: { id: existing.id },
+      data: updateData,
+      include: {
+        category: {
+          select: { uuid: true, name: true, slug: true },
+        },
+      },
+    });
+
+    return {
+      message: 'Berita berhasil diupdate',
+      data: news,
+    };
+  }
+
+  async remove(uuid: string, deletedBy?: string) {
+    const existing = await this.prisma.news.findFirst({
+      where: { uuid, deletedAt: null },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Berita tidak ditemukan');
+    }
+
+    await this.prisma.news.update({
+      where: { id: existing.id },
+      data: {
+        deletedAt: new Date(),
+        deletedBy,
+      },
+    });
+
+    return {
+      message: 'Berita berhasil dihapus',
+      data: {},
+    };
+  }
+}

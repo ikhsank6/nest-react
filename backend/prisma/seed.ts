@@ -125,8 +125,96 @@ async function main() {
     },
   });
 
-  // Create menu access for admin
-  const menus = [dashboardMenu, masterMenu, usersMenu, rolesMenu, menusMenu];
+  // Create CMS parent menu
+  const cmsMenu = await prisma.menu.upsert({
+    where: { id: 6 },
+    update: {},
+    create: {
+      name: 'CMS',
+      icon: 'FileText',
+      order: 3,
+      createdBy: 'System',
+      updatedBy: 'System',
+    },
+  });
+
+  const carouselMenu = await prisma.menu.upsert({
+    where: { id: 7 },
+    update: {
+      path: '/cms/carousel',
+    },
+    create: {
+      name: 'Carousel',
+      path: '/cms/carousel',
+      icon: 'Image',
+      parentId: cmsMenu.id,
+      order: 1,
+      createdBy: 'System',
+      updatedBy: 'System',
+    },
+  });
+
+  const newsCategoryMenu = await prisma.menu.upsert({
+    where: { id: 8 },
+    update: {
+      path: '/cms/news-category',
+    },
+    create: {
+      name: 'News Categories',
+      path: '/cms/news-category',
+      icon: 'FolderOpen',
+      parentId: cmsMenu.id,
+      order: 2,
+      createdBy: 'System',
+      updatedBy: 'System',
+    },
+  });
+
+  const newsMenu = await prisma.menu.upsert({
+    where: { id: 9 },
+    update: {
+      path: '/cms/news',
+    },
+    create: {
+      name: 'News',
+      path: '/cms/news',
+      icon: 'Newspaper',
+      parentId: cmsMenu.id,
+      order: 3,
+      createdBy: 'System',
+      updatedBy: 'System',
+    },
+  });
+
+  const aboutUsMenu = await prisma.menu.upsert({
+    where: { id: 10 },
+    update: {
+      path: '/cms/about-us',
+    },
+    create: {
+      name: 'About Us',
+      path: '/cms/about-us',
+      icon: 'Info',
+      parentId: cmsMenu.id,
+      order: 4,
+      createdBy: 'System',
+      updatedBy: 'System',
+    },
+  });
+
+  // Create menu access for admin (including CMS menus)
+  const menus = [
+    dashboardMenu,
+    masterMenu,
+    usersMenu,
+    rolesMenu,
+    menusMenu,
+    cmsMenu,
+    carouselMenu,
+    newsCategoryMenu,
+    newsMenu,
+    aboutUsMenu,
+  ];
   for (const menu of menus) {
     await prisma.menuAccess.upsert({
       where: {
@@ -173,3 +261,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
