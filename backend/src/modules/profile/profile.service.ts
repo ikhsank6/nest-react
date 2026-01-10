@@ -11,8 +11,8 @@ export class ProfileService {
   constructor(private prisma: PrismaService) {}
 
   async getProfile(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
       include: { role: true },
     });
 
@@ -24,12 +24,12 @@ export class ProfileService {
   }
 
   async updateProfile(userId: number, updateProfileDto: UpdateProfileDto) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
     if (!user) throw new NotFoundException('User tidak ditemukan.');
 
     if (updateProfileDto.email && updateProfileDto.email !== user.email) {
-      const existingEmail = await this.prisma.user.findUnique({
-        where: { email: updateProfileDto.email },
+      const existingEmail = await this.prisma.user.findFirst({
+        where: { email: updateProfileDto.email, deletedAt: null },
       });
       if (existingEmail) throw new BadRequestException('Email sudah digunakan.');
     }
@@ -44,7 +44,7 @@ export class ProfileService {
   }
 
   async changePassword(userId: number, changePasswordDto: ChangePasswordDto) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
     if (!user) throw new NotFoundException('User tidak ditemukan.');
 
     const isPasswordValid = await comparePassword(changePasswordDto.currentPassword, user.password);
@@ -60,7 +60,7 @@ export class ProfileService {
   }
 
   async updateAvatar(userId: number, avatarFilename: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
     if (user && (user as any).avatar) {
       this.deleteFileIfExists((user as any).avatar);
     }
@@ -75,7 +75,7 @@ export class ProfileService {
   }
 
   async deleteAvatar(userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
     if (user && (user as any).avatar) {
       this.deleteFileIfExists((user as any).avatar);
     }
@@ -90,8 +90,8 @@ export class ProfileService {
   }
 
   async deleteAvatarByUuid(uuid: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { uuid },
+    const user = await this.prisma.user.findFirst({
+      where: { uuid, deletedAt: null },
     });
 
     if (!user) {
@@ -112,7 +112,7 @@ export class ProfileService {
   }
 
   async getAvatarByUuid(uuid: string): Promise<string> {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findFirst({
       where: { uuid, deletedAt: null },
     });
 

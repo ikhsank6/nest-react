@@ -63,29 +63,27 @@ export class EmailService {
     return date.toLocaleDateString('id-ID', options);
   }
 
-  async sendVerificationEmail(email: string, name: string, verificationToken: string, createdAt?: Date, temporaryPassword?: string): Promise<boolean> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:8080');
-    const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
+  private getHtmlTemplate(title: string, content: string, themeColor: string = '#22c55e'): string {
     const appName = this.configService.get<string>('APP_NAME', 'NestReact App');
     const supportEmail = this.configService.get<string>('SUPPORT_EMAIL', 'support@example.com');
-    const registrationDate = createdAt ? this.formatDate(createdAt) : this.formatDate(new Date());
+    const currentYear = new Date().getFullYear();
 
-    const html = `
+    return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Verifikasi Email</title>
+        <title>${title}</title>
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
           <tr>
             <td align="center">
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden;">
-                <!-- Header with Green Background -->
+                <!-- Header -->
                 <tr>
-                  <td style="background-color: #22c55e; padding: 32px 40px; text-align: center;">
+                  <td style="background-color: ${themeColor}; padding: 32px 40px; text-align: center;">
                     <span style="color: #ffffff; font-size: 20px; font-weight: 600;">${appName}</span>
                   </td>
                 </tr>
@@ -93,87 +91,7 @@ export class EmailService {
                 <!-- Main Content -->
                 <tr>
                   <td style="padding: 40px;">
-                    <!-- Greeting -->
-                    <p style="margin: 0 0 8px; color: #6b7280; font-size: 15px;">
-                      Hai <strong style="color: #374151;">${name}</strong>,
-                    </p>
-                    
-                    <!-- Title -->
-                    <h1 style="margin: 0 0 16px; color: #111827; font-size: 24px; font-weight: 700; line-height: 1.3;">
-                      Verifikasi Alamat Email Anda
-                    </h1>
-                    
-                    <!-- Description -->
-                    <p style="margin: 0 0 32px; color: #6b7280; font-size: 15px; line-height: 1.6;">
-                      Akun Anda telah berhasil dibuat. Silakan klik tombol di bawah untuk memverifikasi alamat email Anda dan mengaktifkan akun.
-                    </p>
-                    
-                    <!-- Account Info Box -->
-                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 32px;">
-                      <tr>
-                        <td style="padding: 20px;">
-                          <p style="margin: 0 0 16px; color: #22c55e; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
-                            INFORMASI AKUN
-                          </p>
-                          
-                          <!-- Name Row -->
-                          <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom: 1px solid #f3f4f6;">
-                            <tr>
-                              <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Nama</td>
-                              <td style="padding: 12px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">${name}</td>
-                            </tr>
-                          </table>
-                          
-                          <!-- Email Row -->
-                          <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom: 1px solid #f3f4f6;">
-                            <tr>
-                              <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Email</td>
-                              <td style="padding: 12px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">${email}</td>
-                            </tr>
-                          </table>
-
-                          ${temporaryPassword ? `
-                          <!-- Password Row -->
-                          <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom: 1px solid #f3f4f6;">
-                            <tr>
-                              <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Password Sementara</td>
-                              <td style="padding: 12px 0; color: #ef4444; font-size: 14px; font-weight: 600; text-align: right;">${temporaryPassword}</td>
-                            </tr>
-                          </table>
-                          ` : ''}
-                          
-                          <!-- Registration Date Row -->
-                          <table width="100%" cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Tanggal Registrasi</td>
-                              <td style="padding: 12px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">${registrationDate}</td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-
-                    ${temporaryPassword ? `
-                    <p style="margin: 0 0 32px; color: #ef4444; font-size: 13px; line-height: 1.6; text-align: center; font-style: italic;">
-                      *Disarankan untuk segera mengubah password Anda setelah login pertama kali.
-                    </p>
-                    ` : ''}
-                    
-                    <!-- Expiry Notice -->
-                    <p style="margin: 0 0 20px; color: #9ca3af; font-size: 13px; text-align: center;">
-                      Link verifikasi ini akan kadaluarsa dalam 60 menit.
-                    </p>
-                    
-                    <!-- Button -->
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td align="center" style="padding: 0 0 20px;">
-                          <a href="${verificationLink}" style="display: inline-block; background-color: #22c55e; color: #ffffff; text-decoration: none; padding: 14px 48px; border-radius: 8px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);">
-                            Verifikasi Email
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
+                    ${content}
                   </td>
                 </tr>
                 
@@ -184,10 +102,10 @@ export class EmailService {
                       E-mail ini dibuat secara otomatis, mohon tidak membalas.
                     </p>
                     <p style="margin: 0 0 16px; color: #9ca3af; font-size: 13px; line-height: 1.5;">
-                      Jika butuh bantuan, silakan <a href="mailto:${supportEmail}" style="color: #22c55e; text-decoration: none; font-weight: 500;">hubungi kami</a>.
+                      Jika butuh bantuan, silakan <a href="mailto:${supportEmail}" style="color: ${themeColor}; text-decoration: none; font-weight: 500;">hubungi kami</a>.
                     </p>
                     <p style="margin: 0; color: #d1d5db; font-size: 12px;">
-                      © ${new Date().getFullYear()} ${appName}. All rights reserved.
+                      © ${currentYear} ${appName}. All rights reserved.
                     </p>
                   </td>
                 </tr>
@@ -198,11 +116,142 @@ export class EmailService {
       </body>
       </html>
     `;
+  }
+
+  async sendVerificationEmail(email: string, name: string, verificationToken: string, createdAt?: Date, temporaryPassword?: string): Promise<boolean> {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:8080');
+    const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
+    const registrationDate = createdAt ? this.formatDate(createdAt) : this.formatDate(new Date());
+
+    const content = `
+      <!-- Greeting -->
+      <p style="margin: 0 0 8px; color: #6b7280; font-size: 15px;">
+        Hai <strong style="color: #374151;">${name}</strong>,
+      </p>
+      
+      <!-- Title -->
+      <h1 style="margin: 0 0 16px; color: #111827; font-size: 24px; font-weight: 700; line-height: 1.3;">
+        Verifikasi Alamat Email Anda
+      </h1>
+      
+      <!-- Description -->
+      <p style="margin: 0 0 32px; color: #6b7280; font-size: 15px; line-height: 1.6;">
+        Akun Anda telah berhasil dibuat. Silakan klik tombol di bawah untuk memverifikasi alamat email Anda dan mengaktifkan akun.
+      </p>
+      
+      <!-- Account Info Box -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 32px;">
+        <tr>
+          <td style="padding: 20px;">
+            <p style="margin: 0 0 16px; color: #22c55e; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+              INFORMASI AKUN
+            </p>
+            
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom: 1px solid #f3f4f6;">
+              <tr>
+                <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Nama</td>
+                <td style="padding: 12px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">${name}</td>
+              </tr>
+            </table>
+            
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom: 1px solid #f3f4f6;">
+              <tr>
+                <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Email</td>
+                <td style="padding: 12px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">${email}</td>
+              </tr>
+            </table>
+
+            ${temporaryPassword ? `
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom: 1px solid #f3f4f6;">
+              <tr>
+                <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Password Sementara</td>
+                <td style="padding: 12px 0; color: #ef4444; font-size: 14px; font-weight: 600; text-align: right;">${temporaryPassword}</td>
+              </tr>
+            </table>
+            ` : ''}
+            
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Tanggal Registrasi</td>
+                <td style="padding: 12px 0; color: #111827; font-size: 14px; font-weight: 500; text-align: right;">${registrationDate}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      ${temporaryPassword ? `
+      <p style="margin: 0 0 32px; color: #ef4444; font-size: 13px; line-height: 1.6; text-align: center; font-style: italic;">
+        *Disarankan untuk segera mengubah password Anda setelah login pertama kali.
+      </p>
+      ` : ''}
+      
+      <!-- Expiry Notice -->
+      <p style="margin: 0 0 20px; color: #9ca3af; font-size: 13px; text-align: center;">
+        Link verifikasi ini akan kadaluarsa dalam 60 menit.
+      </p>
+      
+      <!-- Button -->
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <a href="${verificationLink}" style="display: inline-block; background-color: #22c55e; color: #ffffff; text-decoration: none; padding: 14px 48px; border-radius: 8px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);">
+              Verifikasi Email
+            </a>
+          </td>
+        </tr>
+      </table>
+    `;
 
     return this.sendEmail({
       to: email,
       subject: 'Verifikasi Alamat Email Anda',
-      html,
+      html: this.getHtmlTemplate('Verifikasi Email', content, '#22c55e'),
+    });
+  }
+
+  async sendResetPasswordEmail(email: string, name: string, resetToken: string): Promise<boolean> {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:8080');
+    const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    const content = `
+      <!-- Greeting -->
+      <p style="margin: 0 0 8px; color: #6b7280; font-size: 15px;">
+        Hai <strong style="color: #374151;">${name}</strong>,
+      </p>
+      
+      <!-- Title -->
+      <h1 style="margin: 0 0 16px; color: #111827; font-size: 24px; font-weight: 700; line-height: 1.3;">
+        Permintaan Reset Password
+      </h1>
+      
+      <!-- Description -->
+      <p style="margin: 0 0 32px; color: #6b7280; font-size: 15px; line-height: 1.6;">
+        Kami menerima permintaan untuk mereset password akun Anda. Silakan klik tombol di bawah untuk memilih password baru.
+      </p>
+      
+      <!-- Button -->
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center" style="padding: 0 0 32px;">
+            <a href="${resetLink}" style="display: inline-block; background-color: #f97316; color: #ffffff; text-decoration: none; padding: 14px 48px; border-radius: 8px; font-size: 15px; font-weight: 600; box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);">
+              Reset Password
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Expiry Notice -->
+      <p style="margin: 0 0 20px; color: #9ca3af; font-size: 13px; text-align: center; line-height: 1.5;">
+        Link reset password ini akan kadaluarsa dalam 60 menit.<br>
+        Abaikan email ini jika Anda tidak merasa melakukan permintaan ini.
+      </p>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Reset Password Akun Anda',
+      html: this.getHtmlTemplate('Reset Password', content, '#f97316'),
     });
   }
 }

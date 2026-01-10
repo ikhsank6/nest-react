@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { LoginDto, RegisterDto, ForgotPasswordDto } from './dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
 import { hashPassword, comparePassword } from '../../common/utils/hash.util';
 import { MenuAccessService } from '../menu-access/menu-access.service';
 import { QueueService } from '../queue/queue.service';
@@ -17,8 +17,8 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: loginDto.email },
+    const user = await this.prisma.user.findFirst({
+      where: { email: loginDto.email, deletedAt: null },
       include: { role: true },
     });
 
@@ -81,8 +81,8 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: registerDto.email },
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: registerDto.email, deletedAt: null },
     });
 
     if (existingUser) {
@@ -91,7 +91,7 @@ export class AuthService {
 
     // Get default "User" role
     const defaultRole = await this.prisma.role.findFirst({
-      where: { name: 'User' },
+      where: { name: 'User', deletedAt: null },
     });
 
     if (!defaultRole) {
@@ -140,7 +140,7 @@ export class AuthService {
   async verifyEmail(token: string) {
     // First try to find user by verification token
     let user = await this.prisma.user.findFirst({
-      where: { verificationToken: token },
+      where: { verificationToken: token, deletedAt: null },
     });
 
     if (!user) {
@@ -175,8 +175,8 @@ export class AuthService {
   }
 
   async resendVerificationEmail(email: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+    const user = await this.prisma.user.findFirst({
+      where: { email, deletedAt: null },
     });
 
     if (!user) {
@@ -214,8 +214,8 @@ export class AuthService {
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: forgotPasswordDto.email },
+    const user = await this.prisma.user.findFirst({
+      where: { email: forgotPasswordDto.email, deletedAt: null },
     });
 
     if (!user) {
@@ -226,8 +226,25 @@ export class AuthService {
       };
     }
 
-    // TODO: Implement email sending logic here
-    // For now, just return success message
+    // Generate reset password token
+    const resetPasswordToken = uuidv4();
+    const resetPasswordExpires = new Date();
+    resetPasswordExpires.setHours(resetPasswordExpires.getHours() + 1); // 1 hour expiry
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken,
+        resetPasswordExpires,
+      },
+    });
+
+    // Queue reset password email
+    await this.queueService.addResetPasswordEmailJob({
+      email: user.email,
+      name: user.name,
+      resetToken: resetPasswordToken,
+    });
 
     return {
       message: 'Instruksi reset password telah dikirim ke email.',
@@ -235,9 +252,41 @@ export class AuthService {
     };
   }
 
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        resetPasswordToken: resetPasswordDto.token,
+        resetPasswordExpires: {
+          gt: new Date(),
+        },
+        deletedAt: null,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Token reset password tidak valid atau sudah kadaluarsa.');
+    }
+
+    const hashedPassword = await hashPassword(resetPasswordDto.password);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    return {
+      message: 'Password berhasil diupdate. Silakan login dengan password baru Anda.',
+      data: {},
+    };
+  }
+
   async validateUser(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
       include: { role: true },
     });
 
@@ -249,8 +298,8 @@ export class AuthService {
   }
 
   async getProfile(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
       include: { role: true },
     });
 

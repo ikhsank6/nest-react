@@ -12,6 +12,12 @@ export interface VerificationEmailJob {
   temporaryPassword?: string;
 }
 
+export interface ResetPasswordEmailJob {
+  email: string;
+  name: string;
+  resetToken: string;
+}
+
 @Processor('email')
 export class EmailProcessor {
   private readonly logger = new Logger(EmailProcessor.name);
@@ -34,6 +40,23 @@ export class EmailProcessor {
       this.logger.log(`Verification email sent successfully to: ${job.data.email}`);
     } catch (error) {
       this.logger.error(`Failed to send verification email to: ${job.data.email}`, error);
+      throw error;
+    }
+  }
+
+  @Process('resetPassword')
+  async handleResetPasswordEmail(job: Job<ResetPasswordEmailJob>) {
+    this.logger.log(`Processing reset password email job for: ${job.data.email}`);
+    
+    try {
+      await this.emailService.sendResetPasswordEmail(
+        job.data.email,
+        job.data.name,
+        job.data.resetToken,
+      );
+      this.logger.log(`Reset password email sent successfully to: ${job.data.email}`);
+    } catch (error) {
+      this.logger.error(`Failed to send reset password email to: ${job.data.email}`, error);
       throw error;
     }
   }

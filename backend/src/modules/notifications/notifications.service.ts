@@ -89,6 +89,7 @@ export class NotificationsService {
     await this.prisma.notification.updateMany({
       where: {
         uuid: { in: uuids },
+        deletedAt: null,
       },
       data: {
         isRead: true,
@@ -122,8 +123,8 @@ export class NotificationsService {
   }
 
   async remove(uuid: string) {
-    const notification = await this.prisma.notification.findUnique({
-      where: { uuid },
+    const notification = await this.prisma.notification.findFirst({
+      where: { uuid, deletedAt: null },
     });
 
     if (!notification) {
