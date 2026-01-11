@@ -9,6 +9,7 @@ export interface Carousel {
         uuid: string;
         filename: string;
         original_name: string;
+        url?: string;
     } | null;
     link: string | null;
     order: number;
@@ -38,6 +39,11 @@ export interface UpdateCarouselData {
     isActive?: boolean;
 }
 
+export interface ReorderCarouselItem {
+    uuid: string;
+    order: number;
+}
+
 export const carouselService = {
     getAll: async (page = 1, limit = 10, search?: string): Promise<any> => {
         let url = `/cms/carousel?page=${page}&limit=${limit}&all=true`;
@@ -63,5 +69,10 @@ export const carouselService = {
 
     delete: async (uuid: string) => {
         return api.delete(`/cms/carousel/${uuid}`);
+    },
+
+    reorder: async (items: ReorderCarouselItem[]) => {
+        const response = await api.post('/cms/carousel/reorder', { items }) as any;
+        return response?.data;
     },
 };

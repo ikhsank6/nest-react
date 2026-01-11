@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CreateCarouselDto, UpdateCarouselDto } from './dto/carousel.dto';
+import { CreateCarouselDto, UpdateCarouselDto, ReorderCarouselDto } from './dto/carousel.dto';
 import { buildPaginatedResponse } from '../../../common/utils/pagination.util';
 import { CarouselResource } from './resources/carousel.resource';
 
@@ -143,5 +143,33 @@ export class CarouselService {
       message: 'Carousel berhasil dihapus',
       data: {},
     };
+  }
+
+  async reorder(dto: ReorderCarouselDto) {
+    return (this.prisma as any).$transaction(async (prisma: any) => {
+      const results: any[] = [];
+
+      for (const item of dto.items) {
+        const carousel = await prisma.carousel.findFirst({
+          where: { uuid: item.uuid, deletedAt: null },
+        });
+
+        if (!carousel) {
+          throw new NotFoundException(`Carousel dengan UUID ${item.uuid} tidak ditemukan.`);
+        }
+
+        const updated = await prisma.carousel.update({
+          where: { id: carousel.id },
+          data: { order: item.order },
+          include: { media: true },
+        });
+        results.push(updated);
+      }
+
+      return {
+        message: 'Carousel berhasil di-reorder.',
+        data: CarouselResource.collection(results),
+      };
+    });
   }
 }

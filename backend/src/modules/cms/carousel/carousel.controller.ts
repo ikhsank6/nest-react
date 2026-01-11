@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CarouselService } from './carousel.service';
-import { CreateCarouselDto, UpdateCarouselDto } from './dto/carousel.dto';
+import { CreateCarouselDto, UpdateCarouselDto, ReorderCarouselDto } from './dto/carousel.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -44,6 +44,15 @@ export class CarouselController {
   @ApiOperation({ summary: 'Create carousel' })
   create(@Body() dto: CreateCarouselDto, @Request() req) {
     return this.carouselService.create(dto, req.user?.name);
+  }
+
+  @Post('reorder')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin')
+  @ApiOperation({ summary: 'Reorder carousels' })
+  reorder(@Body() dto: ReorderCarouselDto) {
+    return this.carouselService.reorder(dto);
   }
 
   @Put(':uuid')

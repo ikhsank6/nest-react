@@ -27,6 +27,7 @@ export default function CarouselList() {
     setPage,
     setLimit,
     setSearch,
+    setData,
     refresh: fetchData,
   } = useTable<Carousel>('carousels', useCallback((p, l, s) => carouselService.getAll(p, l, s), []));
 
@@ -54,6 +55,27 @@ export default function CarouselList() {
   const handlePageChange = (p: number) => setPage(p);
   const handleLimitChange = (l: number) => setLimit(l);
   const handleRefresh = () => fetchData();
+
+  const handleReorder = async (newCarousels: Carousel[]) => {
+    // Optimistic update with updated order numbers
+    const updatedCarousels = newCarousels.map((carousel, index) => ({
+      ...carousel,
+      order: index + 1
+    }));
+    setData(updatedCarousels);
+
+    try {
+      const items = updatedCarousels.map(c => ({
+        uuid: c.uuid,
+        order: c.order,
+      }));
+      await carouselService.reorder(items);
+      showSuccess('Urutan carousel berhasil diperbarui');
+    } catch (err) {
+      showError(err);
+      fetchData(); // Revert by fetching
+    }
+  };
 
   const openCreateDrawer = () => {
     form.reset({ title: '', subtitle: '', image: null, mediaUuid: '', link: '', order: 0, isActive: true });
@@ -206,6 +228,7 @@ export default function CarouselList() {
         itemsPerPage={limit}
         onItemsPerPageChange={handleLimitChange}
         showPagination={totalItems > 0}
+        onReorder={handleReorder}
       />
 
       {/* View Drawer */}
