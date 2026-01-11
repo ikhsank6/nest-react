@@ -3,17 +3,19 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@ne
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResendVerificationDto, ResetPasswordDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
+import { LoginThrottlerGuard } from '../../common/guards/login-throttler.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('login')
   @HttpCode(200)
-  @ApiOperation({ summary: 'User login', description: 'Login with email and password to get JWT token' })
-  @ApiResponse({ 
-    status: 200, 
+  @UseGuards(LoginThrottlerGuard)
+  @ApiOperation({ summary: 'User login', description: 'Login with email and password to get JWT token. Rate limited to 5 attempts per minute.' })
+  @ApiResponse({
+    status: 200,
     description: 'Login successful - Copy the accessToken and click "Authorize" button to use it',
     schema: {
       example: {
@@ -32,6 +34,7 @@ export class AuthController {
     }
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiResponse({ status: 429, description: 'Too many login attempts. Please try again later.' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
