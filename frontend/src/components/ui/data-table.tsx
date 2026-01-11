@@ -109,6 +109,7 @@ interface DataTableProps<T> {
   onReorder?: (newOrder: T[]) => void
   onReparent?: (itemId: string, newParentId: string | null) => void
   canBeParent?: (item: T) => boolean
+  showViewToggle?: boolean
   className?: string
 }
 
@@ -219,6 +220,7 @@ export function DataTable<T>({
   onReorder,
   onReparent,
   canBeParent,
+  showViewToggle = true,
   className,
 }: DataTableProps<T>) {
   const [viewMode, setViewMode] = React.useState<'table' | 'grid'>('table')
@@ -307,24 +309,26 @@ export function DataTable<T>({
         
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
           {/* View Toggle */}
-          <div className="flex items-center rounded-md border p-1 bg-muted/30">
-            <Button 
-              variant={viewMode === 'table' ? 'secondary' : 'ghost'} 
-              size="icon" 
-              className={cn("h-8 w-8 rounded-sm", viewMode === 'table' && "shadow-sm")}
-              onClick={() => setViewMode('table')}
-            >
-              <LayoutList className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
-              size="icon" 
-              className={cn("h-8 w-8 rounded-sm", viewMode === 'grid' && "shadow-sm")}
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-          </div>
+          {showViewToggle && (
+            <div className="flex items-center rounded-md border p-1 bg-muted/30">
+              <Button 
+                variant={viewMode === 'table' ? 'secondary' : 'ghost'} 
+                size="icon" 
+                className={cn("h-8 w-8 rounded-sm", viewMode === 'table' && "shadow-sm")}
+                onClick={() => setViewMode('table')}
+              >
+                <LayoutList className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
+                size="icon" 
+                className={cn("h-8 w-8 rounded-sm", viewMode === 'grid' && "shadow-sm")}
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           {/* Items per page */}
           {onItemsPerPageChange && (

@@ -1,163 +1,95 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAboutUsDto, UpdateAboutUsDto } from './dto/about-us.dto';
-import { buildPaginatedResponse } from '../../../common/utils/pagination.util';
 import { AboutUsResource } from './resources/about-us.resource';
 
 @Injectable()
 export class AboutUsService {
     constructor(private prisma: PrismaService) { }
 
-    async findAll(page = 1, limit = 10, search?: string, includeInactive = false) {
-        const skip = (page - 1) * limit;
-
-        const whereClause: any = { deletedAt: null };
-
-        if (!includeInactive) {
-            whereClause.isActive = true;
-        }
-
-        if (search) {
-            whereClause.OR = [
-                { section: { contains: search, mode: 'insensitive' } },
-                { title: { contains: search, mode: 'insensitive' } },
-                { content: { contains: search, mode: 'insensitive' } },
-            ];
-        }
-
-        const [sections, total] = await Promise.all([
-            this.prisma.aboutUs.findMany({
-                where: whereClause,
-                orderBy: { order: 'asc' },
-                skip,
-                take: limit,
-            }),
-            this.prisma.aboutUs.count({ where: whereClause }),
-        ]);
-
-        return buildPaginatedResponse(
-            AboutUsResource.collection(sections),
-            total,
-            page,
-            limit,
-            'Daftar section About Us berhasil diambil',
-        );
-    }
-
-    async findOne(uuid: string) {
-        const section = await this.prisma.aboutUs.findFirst({
-            where: { uuid, deletedAt: null },
+    async get() {
+        const profile = await this.prisma.aboutUs.findFirst({
+            where: { deletedAt: null },
+            include: { media: true },
+            orderBy: { createdAt: 'desc' },
         });
 
-        if (!section) {
-            throw new NotFoundException('Section tidak ditemukan');
+        if (!profile) {
+            return {
+                message: 'Belum ada data profil perusahaan',
+                data: null,
+            };
         }
 
         return {
-            message: 'Detail section berhasil diambil',
-            data: new AboutUsResource(section),
-        };
-    }
-
-    async findBySection(sectionName: string) {
-        const section = await this.prisma.aboutUs.findFirst({
-            where: { section: sectionName, deletedAt: null, isActive: true },
-        });
-
-        if (!section) {
-            throw new NotFoundException('Section tidak ditemukan');
-        }
-
-        return {
-            message: 'Detail section berhasil diambil',
-            data: new AboutUsResource(section),
+            message: 'Profil perusahaan berhasil diambil',
+            data: new AboutUsResource(profile),
         };
     }
 
     async create(dto: CreateAboutUsDto, createdBy?: string) {
-        return this.prisma.$transaction(async (prisma) => {
-            // Check if section already exists
-            const existing = await prisma.aboutUs.findFirst({
-                where: { section: dto.section, deletedAt: null },
+        let mediaId: number | null = null;
+        if (dto.mediaUuid) {
+            const media = await this.prisma.media.findUnique({
+                where: { uuid: dto.mediaUuid },
             });
+            if (media) mediaId = media.id;
+        }
 
-            if (existing) {
-                throw new ConflictException('Section sudah ada');
-            }
+        const { mediaUuid, image, ...data } = dto as any;
 
-            const section = await prisma.aboutUs.create({
-                data: {
-                    ...dto,
-                    createdBy,
-                    updatedBy: createdBy,
-                },
-            });
-
-            return {
-                message: 'Section berhasil dibuat',
-                data: new AboutUsResource(section),
-            };
+        const profile = await this.prisma.aboutUs.create({
+            data: {
+                ...data,
+                mediaId,
+                createdBy,
+                updatedBy: createdBy,
+            } as any,
+            include: { media: true },
         });
+
+        return {
+            message: 'Profil perusahaan berhasil dibuat',
+            data: new AboutUsResource(profile),
+        };
     }
 
     async update(uuid: string, dto: UpdateAboutUsDto, updatedBy?: string) {
-        return this.prisma.$transaction(async (prisma) => {
-            const existing = await prisma.aboutUs.findFirst({
-                where: { uuid, deletedAt: null },
-            });
+        const existing = await this.prisma.aboutUs.findFirst({
+            where: { uuid, deletedAt: null },
+        });
 
-            if (!existing) {
-                throw new NotFoundException('Section tidak ditemukan');
-            }
+        if (!existing) {
+            throw new NotFoundException('Profil perusahaan tidak ditemukan');
+        }
 
-            // Check for duplicate section
-            if (dto.section) {
-                const duplicate = await prisma.aboutUs.findFirst({
-                    where: { section: dto.section, id: { not: existing.id }, deletedAt: null },
+        let mediaId: number | null | undefined = undefined; // Use undefined to skip update if not provided
+        if (dto.mediaUuid !== undefined) {
+            if (dto.mediaUuid) {
+                const media = await this.prisma.media.findUnique({
+                    where: { uuid: dto.mediaUuid },
                 });
-
-                if (duplicate) {
-                    throw new ConflictException('Section sudah ada');
-                }
+                mediaId = media ? media.id : null;
+            } else {
+                mediaId = null;
             }
+        }
 
-            const section = await prisma.aboutUs.update({
-                where: { id: existing.id },
-                data: {
-                    ...dto,
-                    updatedBy,
-                },
-            });
+        const { mediaUuid, image, ...data } = dto as any;
 
-            return {
-                message: 'Section berhasil diupdate',
-                data: new AboutUsResource(section),
-            };
+        const profile = await this.prisma.aboutUs.update({
+            where: { id: existing.id },
+            data: {
+                ...data,
+                ...(mediaId !== undefined && { mediaId }),
+                updatedBy,
+            } as any,
+            include: { media: true },
         });
-    }
 
-    async remove(uuid: string, deletedBy?: string) {
-        return this.prisma.$transaction(async (prisma) => {
-            const existing = await prisma.aboutUs.findFirst({
-                where: { uuid, deletedAt: null },
-            });
-
-            if (!existing) {
-                throw new NotFoundException('Section tidak ditemukan');
-            }
-
-            await prisma.aboutUs.update({
-                where: { id: existing.id },
-                data: {
-                    deletedAt: new Date(),
-                    deletedBy,
-                },
-            });
-
-            return {
-                message: 'Section berhasil dihapus',
-                data: {},
-            };
-        });
+        return {
+            message: 'Profil perusahaan berhasil diupdate',
+            data: new AboutUsResource(profile),
+        };
     }
 }

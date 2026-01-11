@@ -25,11 +25,23 @@ export type NewsCategoryFormData = z.infer<typeof newsCategoryFormSchema>;
 
 // About Us schemas
 export const aboutUsFormSchema = z.object({
-    section: z.string().min(1, 'Section harus diisi').max(50, 'Section maksimal 50 karakter'),
-    title: z.string().min(1, 'Judul harus diisi').max(100, 'Judul maksimal 100 karakter'),
-    content: z.string().min(1, 'Konten harus diisi'),
-    image: z.string().max(255, 'URL gambar maksimal 255 karakter').optional().or(z.literal('')),
-    order: z.coerce.number().int().min(0, 'Urutan minimal 0').optional(),
+    companyName: z.string().min(1, 'Nama perusahaan harus diisi').max(100, 'Nama maksimal 100 karakter'),
+    description: z.string().min(1, 'Deskripsi harus diisi'),
+    address: z.string().min(1, 'Alamat harus diisi').max(255, 'Alamat maksimal 255 karakter'),
+    phone: z.string().min(1, 'Nomor telepon harus diisi').max(20, 'Nomor telepon maksimal 20 karakter'),
+    email: z.string().min(1, 'Email harus diisi').email('Email tidak valid'),
+    whatsapp: z.string().max(20, 'Nomor WhatsApp maksimal 20 karakter').optional().or(z.literal('')),
+    facebook: z.string().max(255, 'URL Facebook maksimal 255 karakter').optional().or(z.literal('')),
+    instagram: z.string().max(255, 'URL Instagram maksimal 255 karakter').optional().or(z.literal('')),
+    twitter: z.string().max(255, 'URL Twitter maksimal 255 karakter').optional().or(z.literal('')),
+    youtube: z.string().max(255, 'URL YouTube maksimal 255 karakter').optional().or(z.literal('')),
+    linkedin: z.string().max(255, 'URL LinkedIn maksimal 255 karakter').optional().or(z.literal('')),
+    latitude: z.coerce.number().optional().nullable(),
+    longitude: z.coerce.number().optional().nullable(),
+    mapsUrl: z.string().optional().or(z.literal('')),
+    logo: z.string().max(255, 'URL logo maksimal 255 karakter').optional().or(z.literal('')),
+    image: z.any().optional().nullable(),
+    mediaUuid: z.string().optional().or(z.literal('')),
     isActive: z.boolean().optional(),
 });
 

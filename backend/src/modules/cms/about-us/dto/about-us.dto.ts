@@ -1,28 +1,87 @@
-import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsEmail, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateAboutUsDto {
-    @ApiProperty({ description: 'Section identifier (e.g., vision, mission, history)' })
+    @ApiProperty({ description: 'Company name' })
     @IsString()
-    section: string;
+    companyName: string;
 
-    @ApiProperty({ description: 'Section title' })
+    @ApiProperty({ description: 'Company description' })
     @IsString()
-    title: string;
+    description: string;
 
-    @ApiProperty({ description: 'Content (HTML/Markdown)' })
-    @IsString()
-    content: string;
-
-    @ApiPropertyOptional({ description: 'Image path' })
+    @ApiPropertyOptional({ description: 'Address' })
     @IsOptional()
     @IsString()
-    image?: string;
+    address?: string;
 
-    @ApiPropertyOptional({ description: 'Display order', default: 0 })
+    @ApiPropertyOptional({ description: 'Phone number' })
     @IsOptional()
-    @IsInt()
-    order?: number;
+    @IsString()
+    phone?: string;
+
+    @ApiPropertyOptional({ description: 'Email' })
+    @IsOptional()
+    @IsEmail()
+    email?: string;
+
+    @ApiPropertyOptional({ description: 'WhatsApp number' })
+    @IsOptional()
+    @IsString()
+    whatsapp?: string;
+
+    @ApiPropertyOptional({ description: 'Facebook URL' })
+    @IsOptional()
+    @IsString()
+    facebook?: string;
+
+    @ApiPropertyOptional({ description: 'Instagram URL' })
+    @IsOptional()
+    @IsString()
+    instagram?: string;
+
+    @ApiPropertyOptional({ description: 'Twitter/X URL' })
+    @IsOptional()
+    @IsString()
+    twitter?: string;
+
+    @ApiPropertyOptional({ description: 'YouTube URL' })
+    @IsOptional()
+    @IsString()
+    youtube?: string;
+
+    @ApiPropertyOptional({ description: 'LinkedIn URL' })
+    @IsOptional()
+    @IsString()
+    linkedin?: string;
+
+    @ApiPropertyOptional({ description: 'Latitude coordinate' })
+    @IsOptional()
+    @IsNumber()
+    @Type(() => Number)
+    latitude?: number;
+
+    @ApiPropertyOptional({ description: 'Longitude coordinate' })
+    @IsOptional()
+    @IsNumber()
+    @Type(() => Number)
+    longitude?: number;
+
+    @ApiPropertyOptional({ description: 'Google Maps URL' })
+    @IsOptional()
+    @IsString()
+    mapsUrl?: string;
+
+    @ApiPropertyOptional({ description: 'Logo path' })
+    @IsOptional()
+    @IsString()
+    logo?: string;
+
+    @ApiPropertyOptional({ description: 'Media UUID for logo' })
+    @IsOptional()
+    @IsString()
+    mediaUuid?: string;
 
     @ApiPropertyOptional({ description: 'Is active', default: true })
     @IsOptional()
@@ -31,30 +90,87 @@ export class CreateAboutUsDto {
 }
 
 export class UpdateAboutUsDto {
-    @ApiPropertyOptional({ description: 'Section identifier' })
+    @ApiPropertyOptional({ description: 'Company name' })
     @IsOptional()
     @IsString()
-    section?: string;
+    companyName?: string;
 
-    @ApiPropertyOptional({ description: 'Section title' })
+    @ApiPropertyOptional({ description: 'Company description' })
     @IsOptional()
     @IsString()
-    title?: string;
+    description?: string;
 
-    @ApiPropertyOptional({ description: 'Content' })
+    @ApiPropertyOptional({ description: 'Address' })
     @IsOptional()
     @IsString()
-    content?: string;
+    address?: string;
 
-    @ApiPropertyOptional({ description: 'Image path' })
+    @ApiPropertyOptional({ description: 'Phone number' })
     @IsOptional()
     @IsString()
-    image?: string;
+    phone?: string;
 
-    @ApiPropertyOptional({ description: 'Display order' })
+    @ApiPropertyOptional({ description: 'Email' })
     @IsOptional()
-    @IsInt()
-    order?: number;
+    @IsEmail()
+    email?: string;
+
+    @ApiPropertyOptional({ description: 'WhatsApp number' })
+    @IsOptional()
+    @IsString()
+    whatsapp?: string;
+
+    @ApiPropertyOptional({ description: 'Facebook URL' })
+    @IsOptional()
+    @IsString()
+    facebook?: string;
+
+    @ApiPropertyOptional({ description: 'Instagram URL' })
+    @IsOptional()
+    @IsString()
+    instagram?: string;
+
+    @ApiPropertyOptional({ description: 'Twitter/X URL' })
+    @IsOptional()
+    @IsString()
+    twitter?: string;
+
+    @ApiPropertyOptional({ description: 'YouTube URL' })
+    @IsOptional()
+    @IsString()
+    youtube?: string;
+
+    @ApiPropertyOptional({ description: 'LinkedIn URL' })
+    @IsOptional()
+    @IsString()
+    linkedin?: string;
+
+    @ApiPropertyOptional({ description: 'Latitude coordinate' })
+    @IsOptional()
+    @IsNumber()
+    @Type(() => Number)
+    latitude?: number;
+
+    @ApiPropertyOptional({ description: 'Longitude coordinate' })
+    @IsOptional()
+    @IsNumber()
+    @Type(() => Number)
+    longitude?: number;
+
+    @ApiPropertyOptional({ description: 'Google Maps URL' })
+    @IsOptional()
+    @IsString()
+    mapsUrl?: string;
+
+    @ApiPropertyOptional({ description: 'Logo path' })
+    @IsOptional()
+    @IsString()
+    logo?: string;
+
+    @ApiPropertyOptional({ description: 'Media UUID for logo' })
+    @IsOptional()
+    @IsString()
+    mediaUuid?: string;
 
     @ApiPropertyOptional({ description: 'Is active' })
     @IsOptional()

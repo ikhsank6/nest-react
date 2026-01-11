@@ -1,2 +1,1 @@
-export { AboutUsFormDrawer } from './AboutUsFormDrawer';
-export { AboutUsViewDrawer } from './AboutUsViewDrawer';
+export * from './AboutUsFormDrawer';
