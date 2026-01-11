@@ -2,6 +2,7 @@ import { ViewSheet, FieldDisplay } from '@/components/ui/form-sheet';
 import { type News } from '@/services/news.service';
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { ImagePreview } from '@/components/ui/image-preview';
 
 interface NewsViewDrawerProps {
   open: boolean;
@@ -12,6 +13,10 @@ interface NewsViewDrawerProps {
 
 export function NewsViewDrawer({ open, onOpenChange, news, onEdit }: NewsViewDrawerProps) {
   if (!news) return null;
+
+  const imageUrl = news.image 
+    ? (news.image.startsWith('http') ? news.image : `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}${news.image}`)
+    : '';
 
   return (
     <ViewSheet
@@ -27,13 +32,14 @@ export function NewsViewDrawer({ open, onOpenChange, news, onEdit }: NewsViewDra
       <FieldDisplay label="Ringkasan" value={news.excerpt || '-'} />
       <FieldDisplay 
         label="Gambar Utama" 
-        value={news.image ? (
+        value={imageUrl ? (
           <div className="mt-2 rounded-md overflow-hidden border">
-             <img 
-               src={news.image.startsWith('http') ? news.image : `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}${news.image}`} 
-               alt={news.title}
-               className="max-h-40 object-cover"
-             />
+            <ImagePreview
+              src={imageUrl}
+              alt={news.title}
+              className="max-h-40"
+              imageClassName="max-h-40 object-cover"
+            />
           </div>
         ) : '-'} 
       />

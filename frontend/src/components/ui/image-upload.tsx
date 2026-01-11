@@ -1,11 +1,17 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, FileImage, Loader2 } from 'lucide-react';
+import { Upload, X, FileImage, Loader2, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { uploadService } from '@/services/upload.service';
 import { showError } from '@/lib/utils';
 import { env } from '@/config/env';
+import { ImagePreview } from '@/components/ui/image-preview';
 
 export interface Media {
   uuid: string;
@@ -23,6 +29,7 @@ interface ImageUploadProps {
 
 export function ImageUpload({ value, onChange, disabled, className }: ImageUploadProps) {
   const [loading, setLoading] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -80,6 +87,11 @@ export function ImageUpload({ value, onChange, disabled, className }: ImageUploa
     return typeof val === 'string' ? val : (val.original_name || val.filename);
   };
 
+  const handleZoomClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowLightbox(true);
+  };
+
   return (
     <div className={cn("space-y-4 w-full", className)}>
       <div
@@ -106,15 +118,36 @@ export function ImageUpload({ value, onChange, disabled, className }: ImageUploa
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-                onClick={removeImage}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30"
+                    onClick={handleZoomClick}
+                  >
+                    <ZoomIn className="h-4 w-4 text-white" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Perbesar Gambar</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={removeImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Hapus Gambar</TooltipContent>
+              </Tooltip>
+              
               <div className="bg-white/90 text-black px-3 py-1 rounded-full text-xs font-semibold">
                 Ganti Gambar
               </div>
@@ -140,6 +173,17 @@ export function ImageUpload({ value, onChange, disabled, className }: ImageUploa
           <FileImage className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{getDisplayName(value)}</span>
         </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {showLightbox && value && (
+        <ImagePreview
+          src={getFullUrl(value)}
+          alt={getDisplayName(value)}
+          className="hidden"
+          isOpen={showLightbox}
+          onClose={() => setShowLightbox(false)}
+        />
       )}
     </div>
   );

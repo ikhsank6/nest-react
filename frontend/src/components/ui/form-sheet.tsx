@@ -184,7 +184,7 @@ export function FieldDisplay({ label, value, className }: FieldDisplayProps) {
       <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
         {label}
       </p>
-      <p className="text-sm font-medium">{value || "-"}</p>
+      <div className="text-sm font-medium">{value || "-"}</div>
     </div>
   )
 }
