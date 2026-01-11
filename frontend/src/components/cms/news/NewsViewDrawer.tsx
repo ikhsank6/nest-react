@@ -3,6 +3,7 @@ import { type News } from '@/services/news.service';
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ImagePreview } from '@/components/ui/image-preview';
+import { env } from '@/config/env';
 
 interface NewsViewDrawerProps {
   open: boolean;
@@ -14,9 +15,19 @@ interface NewsViewDrawerProps {
 export function NewsViewDrawer({ open, onOpenChange, news, onEdit }: NewsViewDrawerProps) {
   if (!news) return null;
 
-  const imageUrl = news.image 
-    ? (news.image.startsWith('http') ? news.image : `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}${news.image}`)
-    : '';
+  // Prioritize media.url, fallback to legacy image field
+  const getImageUrl = () => {
+    if (news.media?.url) {
+      const url = news.media.url;
+      return url.startsWith('http') ? url : `${env.API_URL}${url}`;
+    }
+    if (news.image) {
+      return news.image.startsWith('http') ? news.image : `${env.API_URL}${news.image}`;
+    }
+    return '';
+  };
+
+  const imageUrl = getImageUrl();
 
   return (
     <ViewSheet
@@ -57,3 +68,4 @@ export function NewsViewDrawer({ open, onOpenChange, news, onEdit }: NewsViewDra
     </ViewSheet>
   );
 }
+

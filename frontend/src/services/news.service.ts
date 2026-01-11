@@ -1,5 +1,11 @@
 import api from '@/config/axios';
-import type { NewsCategory } from './news-category.service';
+
+export interface NewsMedia {
+    uuid: string;
+    filename: string;
+    originalName: string;
+    url: string;
+}
 
 export interface News {
     uuid: string;
@@ -8,6 +14,7 @@ export interface News {
     excerpt: string | null;
     content: string;
     image: string | null;
+    media: NewsMedia | null;
     isPublished: boolean;
     publishedAt: string | null;
     viewCount: number;
@@ -27,6 +34,7 @@ export interface CreateNewsData {
     excerpt?: string;
     content: string;
     image?: string;
+    mediaUuid?: string;
     categoryUuid: string;
     isPublished?: boolean;
 }
@@ -37,6 +45,7 @@ export interface UpdateNewsData {
     excerpt?: string;
     content?: string;
     image?: string;
+    mediaUuid?: string;
     categoryUuid?: string;
     isPublished?: boolean;
 }

@@ -35,6 +35,9 @@ export class NewsService {
           category: {
             select: { uuid: true, name: true, slug: true },
           },
+          media: {
+            select: { uuid: true, filename: true, originalName: true, path: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -59,6 +62,9 @@ export class NewsService {
         category: {
           select: { uuid: true, name: true, slug: true },
         },
+        media: {
+          select: { uuid: true, filename: true, originalName: true, path: true },
+        },
       },
     });
 
@@ -79,6 +85,9 @@ export class NewsService {
         include: {
           category: {
             select: { uuid: true, name: true, slug: true },
+          },
+          media: {
+            select: { uuid: true, filename: true, originalName: true, path: true },
           },
         },
       });
@@ -120,12 +129,24 @@ export class NewsService {
         throw new NotFoundException('Kategori tidak ditemukan');
       }
 
-      const { categoryUuid, ...newsData } = dto;
+      const { categoryUuid, mediaUuid, ...newsData } = dto;
+
+      // Get media ID from UUID if provided
+      let mediaId: number | null = null;
+      if (mediaUuid) {
+        const media = await prisma.media.findFirst({
+          where: { uuid: mediaUuid, deletedAt: null },
+        });
+        if (media) {
+          mediaId = media.id;
+        }
+      }
 
       const news = await prisma.news.create({
         data: {
           ...newsData,
           categoryId: category.id,
+          mediaId,
           publishedAt: dto.isPublished ? new Date() : null,
           createdBy,
           updatedBy: createdBy,
@@ -133,6 +154,9 @@ export class NewsService {
         include: {
           category: {
             select: { uuid: true, name: true, slug: true },
+          },
+          media: {
+            select: { uuid: true, filename: true, originalName: true, path: true },
           },
         },
       });
@@ -167,6 +191,7 @@ export class NewsService {
 
       const updateData: any = { ...dto, updatedBy };
       delete updateData.categoryUuid;
+      delete updateData.mediaUuid;
 
       // Handle category change
       if (dto.categoryUuid) {
@@ -181,6 +206,18 @@ export class NewsService {
         updateData.categoryId = category.id;
       }
 
+      // Handle media change
+      if (dto.mediaUuid !== undefined) {
+        if (dto.mediaUuid) {
+          const media = await prisma.media.findFirst({
+            where: { uuid: dto.mediaUuid, deletedAt: null },
+          });
+          updateData.mediaId = media ? media.id : null;
+        } else {
+          updateData.mediaId = null;
+        }
+      }
+
       // Handle publish status change
       if (dto.isPublished !== undefined && dto.isPublished && !existing.publishedAt) {
         updateData.publishedAt = new Date();
@@ -192,6 +229,9 @@ export class NewsService {
         include: {
           category: {
             select: { uuid: true, name: true, slug: true },
+          },
+          media: {
+            select: { uuid: true, filename: true, originalName: true, path: true },
           },
         },
       });

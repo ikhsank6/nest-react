@@ -154,6 +154,7 @@ model Media {
   updatedBy     String?
   deletedBy     String?
   carousels     Carousel[]
+  news          News[]
 
   @@map("media")
 }
@@ -183,7 +184,9 @@ model News {
   slug        String        @unique
   excerpt     String?                          // Short description
   content     String                           // Full content (HTML/Markdown)
-  image       String?                          // Featured image
+  image       String?                          // Featured image path (legacy)
+  mediaId     Int?                             // Link to Media table
+  media       Media?        @relation(fields: [mediaId], references: [id])
   categoryId  Int
   category    NewsCategory  @relation(fields: [categoryId], references: [id])
   isPublished Boolean       @default(false)

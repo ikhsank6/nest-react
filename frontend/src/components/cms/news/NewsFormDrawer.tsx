@@ -12,16 +12,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { type NewsFormData } from '@/lib/cms-validations';
 import { type NewsCategory } from '@/services/news-category.service';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 interface NewsFormDrawerProps {
   open: boolean;
@@ -55,6 +50,7 @@ export function NewsFormDrawer({
       onSubmit={form.handleSubmit(onSubmit)}
       submitLabel={mode === 'create' ? 'Simpan' : 'Update'}
       loading={loading}
+      className="sm:max-w-2xl"
     >
       <Form {...form}>
         <div className="space-y-4">
@@ -103,20 +99,20 @@ export function NewsFormDrawer({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Kategori <span className="text-destructive">*</span></FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih kategori" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.uuid} value={cat.uuid}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    options={categories.map((cat) => ({
+                      value: cat.uuid,
+                      label: cat.name,
+                    }))}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Pilih kategori"
+                    searchPlaceholder="Cari kategori..."
+                    emptyText="Kategori tidak ditemukan."
+                    disabled={loading}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -166,11 +162,12 @@ export function NewsFormDrawer({
               <FormItem>
                 <FormLabel>Konten <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Isi berita lengkap..."
-                    {...field}
+                  <RichTextEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Tulis konten berita di sini..."
                     disabled={loading}
-                    rows={8}
+                    minHeight="250px"
                   />
                 </FormControl>
                 <FormMessage />

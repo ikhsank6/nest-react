@@ -1,3 +1,5 @@
+import { MediaResource } from "src/media/resources/media.resource";
+
 export class NewsResource {
     uuid: string;
     title: string;
@@ -5,6 +7,7 @@ export class NewsResource {
     excerpt: string | null;
     content: string;
     image: string | null;
+    media: MediaResource | null;
     viewCount: number;
     isPublished: boolean;
     publishedAt: string | null;
@@ -25,6 +28,7 @@ export class NewsResource {
         this.excerpt = news.excerpt || null;
         this.content = news.content;
         this.image = news.image || null;
+        this.media = MediaResource.fromEntity(news.media);
         this.viewCount = news.viewCount || 0;
         this.isPublished = news.isPublished;
         this.publishedAt = news.publishedAt?.toISOString?.() || news.publishedAt || null;
@@ -53,6 +57,7 @@ export class NewsResource {
             excerpt: this.excerpt,
             content: this.content,
             image: this.image,
+            media: this.media,
             viewCount: this.viewCount,
             isPublished: this.isPublished,
             publishedAt: this.publishedAt,

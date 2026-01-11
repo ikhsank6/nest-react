@@ -12,6 +12,8 @@ import { DeleteDialog } from '@/components/ui/delete-dialog';
 import { useTable } from '@/hooks/useTable';
 import { newsFormSchema, type NewsFormData } from '@/lib/cms-validations';
 import { NewsFormDrawer, NewsViewDrawer } from '@/components/cms/news';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
+import { AuditInfo } from '@/components/ui/audit-info';
 
 type DrawerMode = 'create' | 'edit' | 'view' | null;
 
@@ -45,6 +47,7 @@ export default function NewsList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<News | null>(null);
 
+  const { withRequestGuard } = useRequestGuard();
   // Form
   const form = useForm<NewsFormData>({
     resolver: zodResolver(newsFormSchema),
@@ -53,7 +56,8 @@ export default function NewsList() {
       slug: '',
       excerpt: '',
       content: '',
-      image: '',
+      image: null,
+      mediaUuid: '',
       categoryUuid: '',
       isPublished: false,
     },
@@ -63,14 +67,14 @@ export default function NewsList() {
     fetchCategories();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchCategories = withRequestGuard(async () => {
     try {
       const response = await newsCategoryService.getAll(1, 100);
       setCategories(response.data || []);
     } catch (error) {
       showError(error);
     }
-  };
+  });
 
   const handleSearch = (val: string) => {
     setSearch(val);
@@ -90,7 +94,8 @@ export default function NewsList() {
       slug: '',
       excerpt: '',
       content: '',
-      image: '',
+      image: null,
+      mediaUuid: '',
       categoryUuid: '',
       isPublished: false,
     });
@@ -106,7 +111,13 @@ export default function NewsList() {
       slug: item.slug,
       excerpt: item.excerpt || '',
       content: item.content,
-      image: item.image || '',
+      image: item.media ? {
+        uuid: item.media.uuid,
+        url: item.media.url,
+        filename: item.media.filename,
+        original_name: item.media.originalName,
+      } : null,
+      mediaUuid: item.media?.uuid || '',
       categoryUuid: item.category?.uuid || '',
       isPublished: item.isPublished,
     });
@@ -129,11 +140,20 @@ export default function NewsList() {
   const handleSubmit = async (data: NewsFormData) => {
     setSubmitting(true);
     try {
+      // Extract mediaUuid from image object if it's a Media object
+      const submitData = {
+        ...data,
+        mediaUuid: data.image && typeof data.image === 'object' && 'uuid' in data.image 
+          ? data.image.uuid 
+          : data.mediaUuid || undefined,
+        image: undefined, // Don't send image field, use mediaUuid instead
+      };
+      
       if (drawerMode === 'create') {
-        await newsService.create(data);
+        await newsService.create(submitData);
         showSuccess('Berita berhasil dibuat');
       } else if (drawerMode === 'edit' && selectedItem) {
-        await newsService.update(selectedItem.uuid, data);
+        await newsService.update(selectedItem.uuid, submitData);
         showSuccess('Berita berhasil diupdate');
       }
       
@@ -203,10 +223,7 @@ export default function NewsList() {
       key: 'createdAt',
       header: 'Dibuat',
       cell: (item) => (
-        <div className="flex flex-col">
-          <span className="text-sm">{new Date(item.createdAt).toLocaleDateString()}</span>
-          <span className="text-xs text-muted-foreground">{item.createdBy || '-'}</span>
-        </div>
+        <AuditInfo createdAt={item.createdAt} createdBy={item.createdBy} />
       ),
     },
   ];

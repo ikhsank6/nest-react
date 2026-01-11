@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsBoolean, IsInt, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateNewsDto {
   @ApiProperty({ description: 'News title' })
@@ -19,10 +20,15 @@ export class CreateNewsDto {
   @IsString()
   content: string;
 
-  @ApiPropertyOptional({ description: 'Featured image path' })
+  @ApiPropertyOptional({ description: 'Featured image path (legacy)' })
   @IsOptional()
   @IsString()
   image?: string;
+
+  @ApiPropertyOptional({ description: 'Media UUID for featured image' })
+  @IsOptional()
+  @IsString()
+  mediaUuid?: string;
 
   @ApiProperty({ description: 'Category UUID' })
   @IsString()
@@ -55,10 +61,15 @@ export class UpdateNewsDto {
   @IsString()
   content?: string;
 
-  @ApiPropertyOptional({ description: 'Featured image path' })
+  @ApiPropertyOptional({ description: 'Featured image path (legacy)' })
   @IsOptional()
   @IsString()
   image?: string;
+
+  @ApiPropertyOptional({ description: 'Media UUID for featured image' })
+  @IsOptional()
+  @IsString()
+  mediaUuid?: string;
 
   @ApiPropertyOptional({ description: 'Category UUID' })
   @IsOptional()
