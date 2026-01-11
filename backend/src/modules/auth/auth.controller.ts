@@ -4,8 +4,10 @@ import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResendVerificationDto, ResetPasswordDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { LoginThrottlerGuard } from '../../common/guards/login-throttler.guard';
+import { AuthThrottlerGuard } from '../../common/guards/auth-throttler.guard';
 
 @ApiTags('Authentication')
+@UseGuards(AuthThrottlerGuard)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
@@ -13,7 +15,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   @UseGuards(LoginThrottlerGuard)
-  @ApiOperation({ summary: 'User login', description: 'Login with email and password to get JWT token. Rate limited to 5 attempts per minute.' })
+  @ApiOperation({ summary: 'User login', description: 'Login with email and password to get JWT token. Rate limited to 3 attempts per minute.' })
   @ApiResponse({
     status: 200,
     description: 'Login successful - Copy the accessToken and click "Authorize" button to use it',
@@ -41,9 +43,10 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(200)
-  @ApiOperation({ summary: 'User registration', description: 'Register a new user account (auto-assigned User role). A verification email will be sent.' })
+  @ApiOperation({ summary: 'User registration', description: 'Register a new user account (auto-assigned User role). A verification email will be sent. Rate limited to 10 attempts per minute.' })
   @ApiResponse({ status: 201, description: 'Registration successful. Verification email sent.' })
   @ApiResponse({ status: 400, description: 'Email already exists or validation error' })
+  @ApiResponse({ status: 429, description: 'Too many requests. Please try again later.' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
@@ -59,25 +62,28 @@ export class AuthController {
 
   @Post('resend-verification')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Resend verification email', description: 'Resend verification email to user' })
+  @ApiOperation({ summary: 'Resend verification email', description: 'Resend verification email to user. Rate limited to 10 attempts per minute.' })
   @ApiResponse({ status: 200, description: 'Verification email sent (if email exists and not verified)' })
+  @ApiResponse({ status: 429, description: 'Too many requests. Please try again later.' })
   async resendVerification(@Body() resendVerificationDto: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(resendVerificationDto.email);
   }
 
   @Post('forgot-password')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Forgot password', description: 'Request password reset email' })
+  @ApiOperation({ summary: 'Forgot password', description: 'Request password reset email. Rate limited to 10 attempts per minute.' })
   @ApiResponse({ status: 200, description: 'Password reset email sent (if email exists)' })
+  @ApiResponse({ status: 429, description: 'Too many requests. Please try again later.' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
 
   @Post('reset-password')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Reset password', description: 'Reset password using token from email' })
+  @ApiOperation({ summary: 'Reset password', description: 'Reset password using token from email. Rate limited to 10 attempts per minute.' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiResponse({ status: 429, description: 'Too many requests. Please try again later.' })
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);
   }
