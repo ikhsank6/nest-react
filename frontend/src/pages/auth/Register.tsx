@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { PasswordStrengthMeter } from '@/components/ui/password-strength-meter';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -27,6 +28,9 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  
+  // Hook to prevent duplicate requests (React StrictMode causes double render)
+  const { withRequestGuard } = useRequestGuard();
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -40,7 +44,7 @@ export default function Register() {
 
   const passwordValue = form.watch('password');
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = withRequestGuard(async (data: RegisterFormData) => {
     setLoading(true);
     try {
       await authService.register({ 
@@ -57,7 +61,7 @@ export default function Register() {
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   // Show success message after registration
   if (registrationSuccess) {

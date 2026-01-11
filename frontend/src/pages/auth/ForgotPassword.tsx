@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +23,7 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
+  const { withRequestGuard } = useRequestGuard();
 
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -30,7 +32,7 @@ export default function ForgotPassword() {
     },
   });
 
-  const onSubmit = async (data: ForgotPasswordFormData) => {
+  const onSubmit = withRequestGuard(async (data: ForgotPasswordFormData) => {
     setLoading(true);
     try {
       await authService.forgotPassword(data.email);
@@ -42,7 +44,7 @@ export default function ForgotPassword() {
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   if (sent) {
     return (

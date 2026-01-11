@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,6 +29,7 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { withRequestGuard } = useRequestGuard();
 
   const form = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
@@ -46,7 +48,7 @@ export default function ResetPassword() {
     }
   }, [token, navigate]);
 
-  const onSubmit = async (data: ResetPasswordFormData) => {
+  const onSubmit = withRequestGuard(async (data: ResetPasswordFormData) => {
     if (!token) return;
     
     setLoading(true);
@@ -59,7 +61,7 @@ export default function ResetPassword() {
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   if (success) {
     return (

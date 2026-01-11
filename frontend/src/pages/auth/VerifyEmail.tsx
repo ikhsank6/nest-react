@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { authService } from '@/services/auth.service';
 import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
@@ -18,8 +19,8 @@ export default function VerifyEmail() {
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   
-  // Ref to prevent double API call in React StrictMode
-  const hasCalledApi = useRef(false);
+  // Hook to prevent duplicate API requests
+  const { withRequestGuard } = useRequestGuard();
 
   const token = searchParams.get('token');
 
@@ -31,17 +32,11 @@ export default function VerifyEmail() {
       return;
     }
 
-    // Prevent double API call (React StrictMode in dev)
-    if (hasCalledApi.current) {
-      return;
-    }
-    hasCalledApi.current = true;
-
     // Call verification API once
-    verifyEmail(token);
+    handleVerify(token);
   }, [token]);
 
-  const verifyEmail = async (verificationToken: string) => {
+  const handleVerify = withRequestGuard(async (verificationToken: string) => {
     try {
       setStatus('loading');
       const response = await authService.verifyEmail(verificationToken);
@@ -56,7 +51,7 @@ export default function VerifyEmail() {
       setStatus('error');
       setMessage(errorMessage);
     }
-  };
+  });
 
   const handleResend = async () => {
     if (!resendEmail) return;

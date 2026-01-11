@@ -1,9 +1,11 @@
 import { useEffect, useCallback } from 'react';
 import { useTableStore, type TableState } from '@/stores/table.store';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 
 export function useTable<T>(key: string, fetchFn: (page: number, limit: number, search: string) => Promise<any>) {
   const store = useTableStore();
-  
+  const { withRequestGuard } = useRequestGuard();
+
   // Initialize table if it doesn't exist
   useEffect(() => {
     store.initTable(key);
@@ -20,7 +22,7 @@ export function useTable<T>(key: string, fetchFn: (page: number, limit: number, 
     totalItems: 0,
   };
 
-  const loadData = useCallback(async () => {
+  const loadData = withRequestGuard(useCallback(async () => {
     store.setLoading(key, true);
     store.setError(key, false);
     try {
@@ -35,7 +37,7 @@ export function useTable<T>(key: string, fetchFn: (page: number, limit: number, 
     } finally {
       store.setLoading(key, false);
     }
-  }, [key, state.page, state.limit, state.search, fetchFn]);
+  }, [key, state.page, state.limit, state.search, fetchFn]));
 
   // Handle changes that should trigger a reload
   useEffect(() => {

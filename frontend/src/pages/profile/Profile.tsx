@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -47,6 +48,7 @@ export default function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { withRequestGuard } = useRequestGuard();
 
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -71,7 +73,7 @@ export default function Profile() {
     }
   }, [user, profileForm.reset]);
 
-  const onUpdateProfile = async (data: z.infer<typeof profileSchema>) => {
+  const onUpdateProfile = withRequestGuard(async (data: z.infer<typeof profileSchema>) => {
     try {
       setIsLoading(true);
       const updatedUser = await profileService.updateProfile(data);
@@ -82,9 +84,9 @@ export default function Profile() {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
-  const onChangePassword = async (data: z.infer<typeof passwordSchema>) => {
+  const onChangePassword = withRequestGuard(async (data: z.infer<typeof passwordSchema>) => {
     try {
       setIsLoading(true);
       await profileService.changePassword({
@@ -98,13 +100,13 @@ export default function Profile() {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = withRequestGuard(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -123,9 +125,9 @@ export default function Profile() {
     } finally {
       setIsAvatarLoading(false);
     }
-  };
+  });
 
-  const handleRemoveAvatar = async (e: React.MouseEvent) => {
+  const handleRemoveAvatar = withRequestGuard(async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering file input
     if (!user?.avatar) return;
 
@@ -140,7 +142,7 @@ export default function Profile() {
     } finally {
       setIsAvatarLoading(false);
     }
-  };
+  });
 
   const getInitials = (name: string) => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
@@ -154,7 +156,7 @@ export default function Profile() {
     let isMounted = true;
     let currentBlobUrl: string | null = null;
     
-    const fetchAvatar = async () => {
+    const fetchAvatar = withRequestGuard(useCallback(async () => {
       if (!user?.avatar || !user?.uuid) {
         setAvatarBlobUrl(undefined);
         return;
@@ -166,7 +168,7 @@ export default function Profile() {
         currentBlobUrl = blobUrl;
         setAvatarBlobUrl(blobUrl);
       }
-    };
+    }, [user?.avatar, user?.uuid]));
 
     fetchAvatar();
 

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,6 +27,9 @@ export default function Login() {
   const [notVerified, setNotVerified] = useState(false);
   const [notVerifiedEmail, setNotVerifiedEmail] = useState('');
   const [resending, setResending] = useState(false);
+  
+  // Hook to prevent duplicate requests (React StrictMode causes double render)
+  const { withRequestGuard } = useRequestGuard();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -35,7 +39,7 @@ export default function Login() {
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = withRequestGuard(async (data: LoginFormData) => {
     setLoading(true);
     setNotVerified(false);
     try {
@@ -52,7 +56,7 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   const handleResendVerification = async () => {
     setResending(true);

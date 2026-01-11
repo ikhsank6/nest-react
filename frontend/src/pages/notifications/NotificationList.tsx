@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 import { notificationService, NotificationType } from '@/services/notification.service';
 import type { Notification } from '@/services/notification.service';
 import { DataTable, type Column, type TableActions } from '@/components/ui/data-table';
@@ -16,6 +17,7 @@ import { DeleteDialog } from '@/components/ui/delete-dialog';
 export default function NotificationList() {
   const navigate = useNavigate();
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const { withRequestGuard } = useRequestGuard();
   
   const {
     data: notifications,
@@ -117,7 +119,7 @@ export default function NotificationList() {
     ]
   };
 
-  const handleMarkAsRead = async (uuid: string, showToast = true) => {
+  const handleMarkAsRead = withRequestGuard(async (uuid: string, showToast = true) => {
     try {
       await notificationService.markAsRead([uuid]);
       refresh();
@@ -129,9 +131,9 @@ export default function NotificationList() {
         showError(error);
       }
     }
-  };
+  });
 
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllAsRead = withRequestGuard(async () => {
     try {
       await notificationService.markAllAsRead();
       refresh();
@@ -139,9 +141,9 @@ export default function NotificationList() {
     } catch (error) {
       showError(error);
     }
-  };
+  });
 
-  const handleDelete = async () => {
+  const handleDelete = withRequestGuard(async () => {
     if (!notificationToDelete) return;
     try {
       await notificationService.delete(notificationToDelete.uuid);
@@ -151,7 +153,7 @@ export default function NotificationList() {
     } catch (error) {
       showError(error);
     }
-  };
+  });
 
   return (
     <div className="space-y-4">

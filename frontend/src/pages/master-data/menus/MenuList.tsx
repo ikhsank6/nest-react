@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { menuService, type Menu } from '@/services/menu.service';
@@ -39,6 +40,7 @@ export default function MenuList() {
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { withRequestGuard } = useRequestGuard();
   
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -73,7 +75,7 @@ export default function MenuList() {
     fetchMenus();
   };
   
-  const handleReorder = async (newMenus: Menu[]) => {
+  const handleReorder = withRequestGuard(async (newMenus: Menu[]) => {
       // Optimistic update with updated order numbers
       const updatedMenus = newMenus.map((menu, index) => ({
         ...menu,
@@ -93,9 +95,9 @@ export default function MenuList() {
         showError(error);
         fetchMenus(); // Revert by fetching
       }
-  };
+  });
 
-  const handleReparent = async (itemId: string, newParentId: string | null) => {
+  const handleReparent = withRequestGuard(async (itemId: string, newParentId: string | null) => {
     // Find the menu being moved
     const menuToMove = menus.find(m => m.uuid === itemId);
     const newParent = menus.find(m => m.uuid === newParentId);
@@ -131,7 +133,7 @@ export default function MenuList() {
       showError(error);
       fetchMenus(); // Revert by fetching
     }
-  };
+  });
 
   // Check if a menu can be a parent (only root menus can be parents)
   const canBeParent = (menu: Menu) => !menu.parent;
@@ -176,7 +178,7 @@ export default function MenuList() {
     setSelectedMenu(null);
   };
 
-  const handleSubmit = async (data: CreateMenuFormData) => {
+  const handleSubmit = withRequestGuard(async (data: CreateMenuFormData) => {
     setSubmitting(true);
     try {
       if (drawerMode === 'create') {
@@ -194,9 +196,9 @@ export default function MenuList() {
     } finally {
       setSubmitting(false);
     }
-  };
+  });
 
-  const handleDelete = async () => {
+  const handleDelete = withRequestGuard(async () => {
     if (!menuToDelete) return;
     
     try {
@@ -209,7 +211,7 @@ export default function MenuList() {
       setDeleteDialogOpen(false);
       setMenuToDelete(null);
     }
-  };
+  });
 
   const confirmDelete = (menu: Menu) => {
     setMenuToDelete(menu);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { userService, type User } from '@/services/user.service';
@@ -49,6 +50,7 @@ export default function UserList() {
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { withRequestGuard } = useRequestGuard();
   
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -133,7 +135,7 @@ export default function UserList() {
     setSelectedUser(null);
   };
 
-  const handleSubmit = async (data: UserFormData) => {
+  const handleSubmit = withRequestGuard(async (data: UserFormData) => {
     setSubmitting(true);
 
     try {
@@ -157,9 +159,9 @@ export default function UserList() {
     } finally {
       setSubmitting(false);
     }
-  };
+  });
 
-  const handleDelete = async () => {
+  const handleDelete = withRequestGuard(async () => {
     if (!userToDelete) return;
     
     try {
@@ -172,21 +174,21 @@ export default function UserList() {
       setDeleteDialogOpen(false);
       setUserToDelete(null);
     }
-  };
+  });
 
   const confirmDelete = (user: User) => {
     setUserToDelete(user);
     setDeleteDialogOpen(true);
   };
 
-  const handleResendVerification = async (user: User) => {
+  const handleResendVerification = withRequestGuard(async (user: User) => {
     try {
       await userService.resendVerification(user.uuid);
       showSuccess(`Email verifikasi telah dikirim ke ${user.email}`);
     } catch (error: any) {
       showError(error);
     }
-  };
+  });
 
   // Table columns
   const columns: Column<User>[] = [
