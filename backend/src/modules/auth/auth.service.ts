@@ -14,7 +14,7 @@ export class AuthService {
     private jwtService: JwtService,
     private menuAccessService: MenuAccessService,
     private queueService: QueueService,
-  ) {}
+  ) { }
 
   async login(loginDto: LoginDto) {
     const user = await this.prisma.user.findFirst({
@@ -40,13 +40,13 @@ export class AuthService {
       throw new UnauthorizedException('Akun tidak aktif.');
     }
 
-    const payload = { 
-      sub: user.id, 
+    const payload = {
+      sub: user.id,
       uuid: user.uuid,
-      email: user.email, 
+      email: user.email,
       name: user.name,
       avatar: (user as any).avatar,
-      role: user.role 
+      role: user.role
     };
     const accessToken = this.jwtService.sign(payload);
 
@@ -81,207 +81,214 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    const existingUser = await this.prisma.user.findFirst({
-      where: { email: registerDto.email, deletedAt: null },
-    });
+    return this.prisma.$transaction(async (prisma) => {
+      const existingUser = await prisma.user.findFirst({
+        where: { email: registerDto.email, deletedAt: null },
+      });
 
-    if (existingUser) {
-      throw new BadRequestException('Email sudah terdaftar.');
-    }
+      if (existingUser) {
+        throw new BadRequestException('Email sudah terdaftar.');
+      }
 
-    // Get default "User" role
-    const defaultRole = await this.prisma.role.findFirst({
-      where: { name: 'User', deletedAt: null },
-    });
+      // Get default "User" role
+      const defaultRole = await prisma.role.findFirst({
+        where: { name: 'User', deletedAt: null },
+      });
 
-    if (!defaultRole) {
-      throw new BadRequestException('Role default tidak ditemukan. Silakan hubungi administrator.');
-    }
+      if (!defaultRole) {
+        throw new BadRequestException('Role default tidak ditemukan. Silakan hubungi administrator.');
+      }
 
-    const hashedPassword = await hashPassword(registerDto.password);
-    const verificationToken = uuidv4();
+      const hashedPassword = await hashPassword(registerDto.password);
+      const verificationToken = uuidv4();
 
-    const user = await this.prisma.user.create({
-      data: {
-        name: registerDto.name,
-        email: registerDto.email,
-        password: hashedPassword,
-        roleId: defaultRole.id,
-        isActive: false, // User is inactive until email is verified
-        verificationToken,
-      },
-      include: { role: true },
-    });
-
-    // Queue verification email
-    await this.queueService.addVerificationEmailJob({
-      email: user.email,
-      name: user.name,
-      verificationToken,
-      createdAt: user.createdAt.toISOString(),
-    });
-
-    return {
-      message: 'Registrasi berhasil. Silakan cek email Anda untuk verifikasi.',
-      data: {
-        user: {
-          uuid: user.uuid,
-          email: user.email,
-          name: user.name,
-          role: user.role ? {
-            uuid: user.role.uuid,
-            name: user.role.name,
-          } : null,
+      const user = await prisma.user.create({
+        data: {
+          name: registerDto.name,
+          email: registerDto.email,
+          password: hashedPassword,
+          roleId: defaultRole.id,
+          isActive: false, // User is inactive until email is verified
+          verificationToken,
         },
-      },
-    };
+        include: { role: true },
+      });
+
+      // Queue verification email
+      await this.queueService.addVerificationEmailJob({
+        email: user.email,
+        name: user.name,
+        verificationToken,
+        createdAt: user.createdAt.toISOString(),
+      });
+
+      return {
+        message: 'Registrasi berhasil. Silakan cek email Anda untuk verifikasi.',
+        data: {
+          user: {
+            uuid: user.uuid,
+            email: user.email,
+            name: user.name,
+            role: user.role ? {
+              uuid: user.role.uuid,
+              name: user.role.name,
+            } : null,
+          },
+        },
+      };
+    });
   }
 
   async verifyEmail(token: string) {
-    // First try to find user by verification token
-    let user = await this.prisma.user.findFirst({
-      where: { verificationToken: token, deletedAt: null },
-    });
+    return this.prisma.$transaction(async (prisma) => {
+      // First try to find user by verification token
+      let user = await prisma.user.findFirst({
+        where: { verificationToken: token, deletedAt: null },
+      });
 
-    if (!user) {
-      // If not found by token, the token might already be used
-      // Check if there's a user who was recently verified (within last 5 minutes)
-      // This handles the case where user refreshes the page after verification
-      throw new BadRequestException('Token verifikasi tidak valid atau sudah kadaluarsa.');
-    }
+      if (!user) {
+        throw new BadRequestException('Token verifikasi tidak valid atau sudah kadaluarsa.');
+      }
 
-    // If user already verified
-    if (user.verifiedAt) {
+      // If user already verified
+      if (user.verifiedAt) {
+        return {
+          message: 'Email sudah diverifikasi sebelumnya.',
+          data: {},
+        };
+      }
+
+      // Verify the user
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verifiedAt: new Date(),
+          isActive: true,
+          verificationToken: null, // Clear the token after verification
+        },
+      });
+
       return {
-        message: 'Email sudah diverifikasi sebelumnya.',
+        message: 'Email berhasil diverifikasi. Anda sekarang dapat login.',
         data: {},
       };
-    }
-
-    // Verify the user
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        verifiedAt: new Date(),
-        isActive: true,
-        verificationToken: null, // Clear the token after verification
-      },
     });
-
-    return {
-      message: 'Email berhasil diverifikasi. Anda sekarang dapat login.',
-      data: {},
-    };
   }
 
   async resendVerificationEmail(email: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { email, deletedAt: null },
-    });
+    return this.prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.findFirst({
+        where: { email, deletedAt: null },
+      });
 
-    if (!user) {
-      // Return success even if email not found for security
+      if (!user) {
+        // Return success even if email not found for security
+        return {
+          message: 'Jika email terdaftar, link verifikasi telah dikirim.',
+          data: {},
+        };
+      }
+
+      if (user.verifiedAt) {
+        throw new BadRequestException('Email sudah diverifikasi.');
+      }
+
+      // Generate new verification token
+      const verificationToken = uuidv4();
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { verificationToken },
+      });
+
+      // Queue verification email
+      await this.queueService.addVerificationEmailJob({
+        email: user.email,
+        name: user.name,
+        verificationToken,
+        createdAt: user.createdAt.toISOString(),
+      });
+
       return {
-        message: 'Jika email terdaftar, link verifikasi telah dikirim.',
+        message: 'Link verifikasi telah dikirim ke email Anda.',
         data: {},
       };
-    }
-
-    if (user.verifiedAt) {
-      throw new BadRequestException('Email sudah diverifikasi.');
-    }
-
-    // Generate new verification token
-    const verificationToken = uuidv4();
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { verificationToken },
     });
-
-    // Queue verification email
-    await this.queueService.addVerificationEmailJob({
-      email: user.email,
-      name: user.name,
-      verificationToken,
-      createdAt: user.createdAt.toISOString(),
-    });
-
-    return {
-      message: 'Link verifikasi telah dikirim ke email Anda.',
-      data: {},
-    };
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    const user = await this.prisma.user.findFirst({
-      where: { email: forgotPasswordDto.email, deletedAt: null },
-    });
+    return this.prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.findFirst({
+        where: { email: forgotPasswordDto.email, deletedAt: null },
+      });
 
-    if (!user) {
-      // Return success even if email not found for security
+      if (!user) {
+        // Return success even if email not found for security
+        return {
+          message: 'Jika email terdaftar, instruksi reset password telah dikirim.',
+          data: {},
+        };
+      }
+
+      // Generate reset password token
+      const resetPasswordToken = uuidv4();
+      const resetPasswordExpires = new Date();
+      resetPasswordExpires.setHours(resetPasswordExpires.getHours() + 1); // 1 hour expiry
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetPasswordToken,
+          resetPasswordExpires,
+        },
+      });
+
+      // Queue reset password email
+      await this.queueService.addResetPasswordEmailJob({
+        email: user.email,
+        name: user.name,
+        resetToken: resetPasswordToken,
+      });
+
       return {
-        message: 'Jika email terdaftar, instruksi reset password telah dikirim.',
+        message: 'Instruksi reset password telah dikirim ke email.',
         data: {},
       };
-    }
-
-    // Generate reset password token
-    const resetPasswordToken = uuidv4();
-    const resetPasswordExpires = new Date();
-    resetPasswordExpires.setHours(resetPasswordExpires.getHours() + 1); // 1 hour expiry
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        resetPasswordToken,
-        resetPasswordExpires,
-      },
     });
-
-    // Queue reset password email
-    await this.queueService.addResetPasswordEmailJob({
-      email: user.email,
-      name: user.name,
-      resetToken: resetPasswordToken,
-    });
-
-    return {
-      message: 'Instruksi reset password telah dikirim ke email.',
-      data: {},
-    };
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        resetPasswordToken: resetPasswordDto.token,
-        resetPasswordExpires: {
-          gt: new Date(),
+    return this.prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.findFirst({
+        where: {
+          resetPasswordToken: resetPasswordDto.token,
+          resetPasswordExpires: {
+            gt: new Date(),
+          },
+          deletedAt: null,
         },
-        deletedAt: null,
-      },
+      });
+
+      if (!user) {
+        throw new BadRequestException('Token reset password tidak valid atau sudah kadaluarsa.');
+      }
+
+      const hashedPassword = await hashPassword(resetPasswordDto.password);
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password: hashedPassword,
+          resetPasswordToken: null,
+          resetPasswordExpires: null,
+        },
+      });
+
+      return {
+        message: 'Password berhasil diupdate. Silakan login dengan password baru Anda.',
+        data: {},
+      };
     });
-
-    if (!user) {
-      throw new BadRequestException('Token reset password tidak valid atau sudah kadaluarsa.');
-    }
-
-    const hashedPassword = await hashPassword(resetPasswordDto.password);
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        resetPasswordToken: null,
-        resetPasswordExpires: null,
-      },
-    });
-
-    return {
-      message: 'Password berhasil diupdate. Silakan login dengan password baru Anda.',
-      data: {},
-    };
   }
 
   async validateUser(userId: number) {

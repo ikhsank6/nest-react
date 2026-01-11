@@ -6,11 +6,11 @@ import { MenuResource } from './resources/menu.resource';
 
 @Injectable()
 export class MenusService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findAll(query?: string) {
     const whereCondition: any = { deletedAt: null };
-    
+
     if (query) {
       whereCondition.OR = [
         { name: { contains: query, mode: 'insensitive' } },
@@ -100,97 +100,103 @@ export class MenusService {
   }
 
   async create(createMenuDto: CreateMenuDto) {
-    if (createMenuDto.parentUuid) {
-      const parent = await this.prisma.menu.findFirst({
-        where: { uuid: createMenuDto.parentUuid, deletedAt: null },
-      });
-      if (!parent) {
-        throw new BadRequestException('Parent menu tidak ditemukan.');
-      }
-      // Replace parentUuid with parentId for database
-      const { parentUuid, ...dataWithoutParentUuid } = createMenuDto;
-      const menu = await this.prisma.menu.create({
-        data: { 
-          ...dataWithoutParentUuid, 
-          parentId: parent.id,
-        },
-        include: { parent: true },
-      });
-      return { message: 'Menu berhasil dibuat.', data: new MenuResource(menu) };
-    }
-
-    const { parentUuid, ...data } = createMenuDto;
-    const menu = await this.prisma.menu.create({
-      data: data,
-      include: { parent: true },
-    });
-    return { message: 'Menu berhasil dibuat.', data: new MenuResource(menu) };
-  }
-
-  async update(uuid: string, updateMenuDto: UpdateMenuDto) {
-    const existing = await this.prisma.menu.findFirst({
-      where: { uuid, deletedAt: null },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Menu tidak ditemukan.');
-    }
-
-    let parentId: number | null | undefined = undefined;
-    
-    if (updateMenuDto.parentUuid !== undefined) {
-      if (updateMenuDto.parentUuid === null) {
-        parentId = null;
-      } else if (updateMenuDto.parentUuid === uuid) {
-        throw new BadRequestException('Menu tidak bisa menjadi parent sendiri.');
-      } else {
-        const parent = await this.prisma.menu.findFirst({
-          where: { uuid: updateMenuDto.parentUuid, deletedAt: null },
+    return this.prisma.$transaction(async (prisma) => {
+      if (createMenuDto.parentUuid) {
+        const parent = await prisma.menu.findFirst({
+          where: { uuid: createMenuDto.parentUuid, deletedAt: null },
         });
         if (!parent) {
           throw new BadRequestException('Parent menu tidak ditemukan.');
         }
-        parentId = parent.id;
+        // Replace parentUuid with parentId for database
+        const { parentUuid, ...dataWithoutParentUuid } = createMenuDto;
+        const menu = await prisma.menu.create({
+          data: {
+            ...dataWithoutParentUuid,
+            parentId: parent.id,
+          },
+          include: { parent: true },
+        });
+        return { message: 'Menu berhasil dibuat.', data: new MenuResource(menu) };
       }
-    }
 
-    const { parentUuid, ...dataWithoutParentUuid } = updateMenuDto;
-    const menu = await this.prisma.menu.update({
-      where: { id: existing.id },
-      data: {
-        ...dataWithoutParentUuid,
-        ...(parentId !== undefined && { parentId }),
-      },
-      include: { parent: true },
+      const { parentUuid, ...data } = createMenuDto;
+      const menu = await prisma.menu.create({
+        data: data,
+        include: { parent: true },
+      });
+      return { message: 'Menu berhasil dibuat.', data: new MenuResource(menu) };
     });
+  }
 
-    return { message: 'Menu berhasil diupdate.', data: new MenuResource(menu) };
+  async update(uuid: string, updateMenuDto: UpdateMenuDto) {
+    return this.prisma.$transaction(async (prisma) => {
+      const existing = await prisma.menu.findFirst({
+        where: { uuid, deletedAt: null },
+      });
+
+      if (!existing) {
+        throw new NotFoundException('Menu tidak ditemukan.');
+      }
+
+      let parentId: number | null | undefined = undefined;
+
+      if (updateMenuDto.parentUuid !== undefined) {
+        if (updateMenuDto.parentUuid === null) {
+          parentId = null;
+        } else if (updateMenuDto.parentUuid === uuid) {
+          throw new BadRequestException('Menu tidak bisa menjadi parent sendiri.');
+        } else {
+          const parent = await prisma.menu.findFirst({
+            where: { uuid: updateMenuDto.parentUuid, deletedAt: null },
+          });
+          if (!parent) {
+            throw new BadRequestException('Parent menu tidak ditemukan.');
+          }
+          parentId = parent.id;
+        }
+      }
+
+      const { parentUuid, ...dataWithoutParentUuid } = updateMenuDto;
+      const menu = await prisma.menu.update({
+        where: { id: existing.id },
+        data: {
+          ...dataWithoutParentUuid,
+          ...(parentId !== undefined && { parentId }),
+        },
+        include: { parent: true },
+      });
+
+      return { message: 'Menu berhasil diupdate.', data: new MenuResource(menu) };
+    });
   }
 
   async remove(uuid: string) {
-    const existing = await this.prisma.menu.findFirst({
-      where: { uuid, deletedAt: null },
+    return this.prisma.$transaction(async (prisma) => {
+      const existing = await prisma.menu.findFirst({
+        where: { uuid, deletedAt: null },
+      });
+
+      if (!existing) {
+        throw new NotFoundException('Menu tidak ditemukan.');
+      }
+
+      const children = await prisma.menu.count({
+        where: { parentId: existing.id, deletedAt: null },
+      });
+
+      if (children > 0) {
+        throw new BadRequestException('Menu masih memiliki child menu.');
+      }
+
+      // Soft delete
+      await prisma.menu.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date() },
+      });
+
+      return { message: 'Menu berhasil dihapus.', data: {} };
     });
-
-    if (!existing) {
-      throw new NotFoundException('Menu tidak ditemukan.');
-    }
-
-    const children = await this.prisma.menu.count({
-      where: { parentId: existing.id, deletedAt: null },
-    });
-
-    if (children > 0) {
-      throw new BadRequestException('Menu masih memiliki child menu.');
-    }
-
-    // Soft delete
-    await this.prisma.menu.update({
-      where: { id: existing.id },
-      data: { deletedAt: new Date() },
-    });
-
-    return { message: 'Menu berhasil dihapus.', data: {} };
   }
 
   async reorder(reorderMenusDto: ReorderMenusDto) {

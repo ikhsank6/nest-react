@@ -5,10 +5,11 @@ import { NotificationResource } from './resources/notification.resource';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async create(createDto: CreateNotificationDto) {
-    const notification = await this.prisma.notification.create({
+  async create(createDto: CreateNotificationDto, prismaClient?: any) {
+    const client = prismaClient || this.prisma;
+    const notification = await client.notification.create({
       data: {
         toRoleId: createDto.toRoleId,
         fromUserId: createDto.fromUserId,
@@ -27,7 +28,7 @@ export class NotificationsService {
 
   async findAllForRole(roleId: number, page = 1, limit = 10, unreadOnly = false, search?: string) {
     const skip = (page - 1) * limit;
-    
+
     const where: any = {
       toRoleId: roleId,
       deletedAt: null,
@@ -86,60 +87,66 @@ export class NotificationsService {
   }
 
   async markAsRead(uuids: string[]) {
-    await this.prisma.notification.updateMany({
-      where: {
-        uuid: { in: uuids },
-        deletedAt: null,
-      },
-      data: {
-        isRead: true,
-        readAt: new Date(),
-      },
-    });
+    return this.prisma.$transaction(async (prisma) => {
+      await prisma.notification.updateMany({
+        where: {
+          uuid: { in: uuids },
+          deletedAt: null,
+        },
+        data: {
+          isRead: true,
+          readAt: new Date(),
+        },
+      });
 
-    return {
-      message: 'Notifikasi berhasil ditandai sebagai dibaca.',
-      data: {},
-    };
+      return {
+        message: 'Notifikasi berhasil ditandai sebagai dibaca.',
+        data: {},
+      };
+    });
   }
 
   async markAllAsRead(roleId: number) {
-    await this.prisma.notification.updateMany({
-      where: {
-        toRoleId: roleId,
-        isRead: false,
-        deletedAt: null,
-      },
-      data: {
-        isRead: true,
-        readAt: new Date(),
-      },
-    });
+    return this.prisma.$transaction(async (prisma) => {
+      await prisma.notification.updateMany({
+        where: {
+          toRoleId: roleId,
+          isRead: false,
+          deletedAt: null,
+        },
+        data: {
+          isRead: true,
+          readAt: new Date(),
+        },
+      });
 
-    return {
-      message: 'Semua notifikasi berhasil ditandai sebagai dibaca.',
-      data: {},
-    };
+      return {
+        message: 'Semua notifikasi berhasil ditandai sebagai dibaca.',
+        data: {},
+      };
+    });
   }
 
   async remove(uuid: string) {
-    const notification = await this.prisma.notification.findFirst({
-      where: { uuid, deletedAt: null },
+    return this.prisma.$transaction(async (prisma) => {
+      const notification = await prisma.notification.findFirst({
+        where: { uuid, deletedAt: null },
+      });
+
+      if (!notification) {
+        throw new NotFoundException('Notifikasi tidak ditemukan.');
+      }
+
+      await prisma.notification.update({
+        where: { uuid },
+        data: { deletedAt: new Date() },
+      });
+
+      return {
+        message: 'Notifikasi berhasil dihapus.',
+        data: {},
+      };
     });
-
-    if (!notification) {
-      throw new NotFoundException('Notifikasi tidak ditemukan.');
-    }
-
-    await this.prisma.notification.update({
-      where: { uuid },
-      data: { deletedAt: new Date() },
-    });
-
-    return {
-      message: 'Notifikasi berhasil dihapus.',
-      data: {},
-    };
   }
 
 }

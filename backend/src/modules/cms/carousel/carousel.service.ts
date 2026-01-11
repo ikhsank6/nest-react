@@ -61,88 +61,94 @@ export class CarouselService {
   }
 
   async create(dto: CreateCarouselDto, createdBy?: string) {
-    const { mediaUuid, ...data } = dto;
-    let mediaId: number | undefined = undefined;
+    return (this.prisma as any).$transaction(async (prisma: any) => {
+      const { mediaUuid, ...data } = dto;
+      let mediaId: number | undefined = undefined;
 
-    if (mediaUuid) {
-      const media = await (this.prisma as any).media.findUnique({
-        where: { uuid: mediaUuid },
+      if (mediaUuid) {
+        const media = await prisma.media.findUnique({
+          where: { uuid: mediaUuid },
+        });
+        if (media) mediaId = media.id;
+      }
+
+      const carousel = await prisma.carousel.create({
+        data: {
+          ...data,
+          mediaId,
+          createdBy,
+          updatedBy: createdBy,
+        },
+        include: { media: true },
       });
-      if (media) mediaId = media.id;
-    }
 
-    const carousel = await (this.prisma as any).carousel.create({
-      data: {
-        ...data,
-        mediaId,
-        createdBy,
-        updatedBy: createdBy,
-      },
-      include: { media: true },
+      return {
+        message: 'Carousel berhasil dibuat',
+        data: new CarouselResource(carousel),
+      };
     });
-
-    return {
-      message: 'Carousel berhasil dibuat',
-      data: new CarouselResource(carousel),
-    };
   }
 
   async update(uuid: string, dto: UpdateCarouselDto, updatedBy?: string) {
-    const existing = await (this.prisma as any).carousel.findFirst({
-      where: { uuid, deletedAt: null },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Carousel tidak ditemukan');
-    }
-
-    const { mediaUuid, ...data } = dto;
-    let mediaId: number | undefined = undefined;
-
-    if (mediaUuid) {
-      const media = await (this.prisma as any).media.findUnique({
-        where: { uuid: mediaUuid },
+    return (this.prisma as any).$transaction(async (prisma: any) => {
+      const existing = await prisma.carousel.findFirst({
+        where: { uuid, deletedAt: null },
       });
-      if (media) mediaId = media.id;
-    }
 
-    const carousel = await (this.prisma as any).carousel.update({
-      where: { id: existing.id },
-      data: {
-        ...data,
-        mediaId,
-        updatedBy,
-      },
-      include: { media: true },
+      if (!existing) {
+        throw new NotFoundException('Carousel tidak ditemukan');
+      }
+
+      const { mediaUuid, ...data } = dto;
+      let mediaId: number | undefined = undefined;
+
+      if (mediaUuid) {
+        const media = await prisma.media.findUnique({
+          where: { uuid: mediaUuid },
+        });
+        if (media) mediaId = media.id;
+      }
+
+      const carousel = await prisma.carousel.update({
+        where: { id: existing.id },
+        data: {
+          ...data,
+          mediaId,
+          updatedBy,
+        },
+        include: { media: true },
+      });
+
+      return {
+        message: 'Carousel berhasil diupdate',
+        data: new CarouselResource(carousel),
+      };
     });
-
-    return {
-      message: 'Carousel berhasil diupdate',
-      data: new CarouselResource(carousel),
-    };
   }
 
   async remove(uuid: string, deletedBy?: string) {
-    const existing = await (this.prisma as any).carousel.findFirst({
-      where: { uuid, deletedAt: null },
+    return (this.prisma as any).$transaction(async (prisma: any) => {
+      const existing = await prisma.carousel.findFirst({
+        where: { uuid, deletedAt: null },
+      });
+
+      if (!existing) {
+        throw new NotFoundException('Carousel tidak ditemukan');
+      }
+
+      await prisma.carousel.update({
+        where: { id: existing.id },
+        data: {
+          deletedAt: new Date(),
+          deletedBy,
+        },
+      });
+
+      return {
+        message: 'Carousel berhasil dihapus',
+        data: {},
+      };
     });
-
-    if (!existing) {
-      throw new NotFoundException('Carousel tidak ditemukan');
-    }
-
-    await (this.prisma as any).carousel.update({
-      where: { id: existing.id },
-      data: {
-        deletedAt: new Date(),
-        deletedBy,
-      },
-    });
-
-    return {
-      message: 'Carousel berhasil dihapus',
-      data: {},
-    };
   }
 
   async reorder(dto: ReorderCarouselDto) {

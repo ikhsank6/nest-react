@@ -75,83 +75,89 @@ export class AboutUsService {
     }
 
     async create(dto: CreateAboutUsDto, createdBy?: string) {
-        // Check if section already exists
-        const existing = await this.prisma.aboutUs.findFirst({
-            where: { section: dto.section, deletedAt: null },
+        return this.prisma.$transaction(async (prisma) => {
+            // Check if section already exists
+            const existing = await prisma.aboutUs.findFirst({
+                where: { section: dto.section, deletedAt: null },
+            });
+
+            if (existing) {
+                throw new ConflictException('Section sudah ada');
+            }
+
+            const section = await prisma.aboutUs.create({
+                data: {
+                    ...dto,
+                    createdBy,
+                    updatedBy: createdBy,
+                },
+            });
+
+            return {
+                message: 'Section berhasil dibuat',
+                data: new AboutUsResource(section),
+            };
         });
-
-        if (existing) {
-            throw new ConflictException('Section sudah ada');
-        }
-
-        const section = await this.prisma.aboutUs.create({
-            data: {
-                ...dto,
-                createdBy,
-                updatedBy: createdBy,
-            },
-        });
-
-        return {
-            message: 'Section berhasil dibuat',
-            data: new AboutUsResource(section),
-        };
     }
 
     async update(uuid: string, dto: UpdateAboutUsDto, updatedBy?: string) {
-        const existing = await this.prisma.aboutUs.findFirst({
-            where: { uuid, deletedAt: null },
-        });
-
-        if (!existing) {
-            throw new NotFoundException('Section tidak ditemukan');
-        }
-
-        // Check for duplicate section
-        if (dto.section) {
-            const duplicate = await this.prisma.aboutUs.findFirst({
-                where: { section: dto.section, id: { not: existing.id }, deletedAt: null },
+        return this.prisma.$transaction(async (prisma) => {
+            const existing = await prisma.aboutUs.findFirst({
+                where: { uuid, deletedAt: null },
             });
 
-            if (duplicate) {
-                throw new ConflictException('Section sudah ada');
+            if (!existing) {
+                throw new NotFoundException('Section tidak ditemukan');
             }
-        }
 
-        const section = await this.prisma.aboutUs.update({
-            where: { id: existing.id },
-            data: {
-                ...dto,
-                updatedBy,
-            },
+            // Check for duplicate section
+            if (dto.section) {
+                const duplicate = await prisma.aboutUs.findFirst({
+                    where: { section: dto.section, id: { not: existing.id }, deletedAt: null },
+                });
+
+                if (duplicate) {
+                    throw new ConflictException('Section sudah ada');
+                }
+            }
+
+            const section = await prisma.aboutUs.update({
+                where: { id: existing.id },
+                data: {
+                    ...dto,
+                    updatedBy,
+                },
+            });
+
+            return {
+                message: 'Section berhasil diupdate',
+                data: new AboutUsResource(section),
+            };
         });
-
-        return {
-            message: 'Section berhasil diupdate',
-            data: new AboutUsResource(section),
-        };
     }
 
     async remove(uuid: string, deletedBy?: string) {
-        const existing = await this.prisma.aboutUs.findFirst({
-            where: { uuid, deletedAt: null },
+        return this.prisma.$transaction(async (prisma) => {
+            const existing = await prisma.aboutUs.findFirst({
+                where: { uuid, deletedAt: null },
+            });
+
+            if (!existing) {
+                throw new NotFoundException('Section tidak ditemukan');
+            }
+
+            await prisma.aboutUs.update({
+                where: { id: existing.id },
+                data: {
+                    deletedAt: new Date(),
+                    deletedBy,
+                },
+            });
+
+            return {
+                message: 'Section berhasil dihapus',
+                data: {},
+            };
         });
-
-        if (!existing) {
-            throw new NotFoundException('Section tidak ditemukan');
-        }
-
-        await this.prisma.aboutUs.update({
-            where: { id: existing.id },
-            data: {
-                deletedAt: new Date(),
-                deletedBy,
-            },
-        });
-
-        return {
-            message: 'Section berhasil dihapus',
-            data: {},
-        };
     }
 }
