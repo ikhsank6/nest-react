@@ -24,12 +24,12 @@ import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { ProfileService } from './profile.service';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/profile.dto';
 
-@ApiTags('Profile')
+@ApiTags('1. System : Profile')
 @ApiBearerAuth('JWT-auth')
 @Controller('profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(private readonly profileService: ProfileService) { }
 
   @Get()
   getProfile(@Request() req) {
@@ -43,7 +43,7 @@ export class ProfileController {
   ): Promise<StreamableFile> {
     // Get avatar data (path or filename) from service
     const avatarData = await this.profileService.getAvatarByUuid(uuid);
-    
+
     // Determine the full file path. 
     // If avatarData starts with '/', treat it as relative to CWD, 
     // otherwise look in uploads/avatars.

@@ -6,12 +6,12 @@ import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 
-@ApiTags('Menus')
+@ApiTags('2. Master Data : Menus')
 @ApiBearerAuth('JWT-auth')
 @Controller('master-data/menus')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MenusController {
-  constructor(private readonly menusService: MenusService) {}
+  constructor(private readonly menusService: MenusService) { }
 
   @Get('akses')
   @Roles('Admin')

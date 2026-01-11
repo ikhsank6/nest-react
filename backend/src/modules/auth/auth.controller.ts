@@ -6,7 +6,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { LoginThrottlerGuard } from '../../common/guards/login-throttler.guard';
 import { AuthThrottlerGuard } from '../../common/guards/auth-throttler.guard';
 
-@ApiTags('Authentication')
+@ApiTags('1. System : Authentication')
 @UseGuards(AuthThrottlerGuard)
 @Controller('auth')
 export class AuthController {

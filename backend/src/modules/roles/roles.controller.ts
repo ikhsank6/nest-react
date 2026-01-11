@@ -7,12 +7,12 @@ import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 
-@ApiTags('Roles')
+@ApiTags('2. Master Data : Roles')
 @ApiBearerAuth('JWT-auth')
 @Controller('master-data/roles')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class RolesController {
-  constructor(private readonly rolesService: RolesService) {}
+  constructor(private readonly rolesService: RolesService) { }
 
   @Get()
   @Roles('Admin')
