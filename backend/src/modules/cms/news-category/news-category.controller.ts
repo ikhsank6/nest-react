@@ -7,12 +7,15 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
 @ApiTags('CMS - News Category')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('Admin')
 @Controller('cms/news-category')
 export class NewsCategoryController {
   constructor(private readonly newsCategoryService: NewsCategoryService) { }
 
   @Get()
-  @ApiOperation({ summary: 'Get all news categories (public)' })
+  @ApiOperation({ summary: 'Get all news categories' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'search', required: false })
@@ -38,18 +41,12 @@ export class NewsCategoryController {
   }
 
   @Post()
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Create news category' })
   create(@Body() dto: CreateNewsCategoryDto, @Request() req) {
     return this.newsCategoryService.create(dto, req.user?.name);
   }
 
   @Put(':uuid')
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Update news category' })
   update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
@@ -60,9 +57,6 @@ export class NewsCategoryController {
   }
 
   @Delete(':uuid')
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Delete news category' })
   remove(@Param('uuid', ParseUUIDPipe) uuid: string, @Request() req) {
     return this.newsCategoryService.remove(uuid, req.user?.name);

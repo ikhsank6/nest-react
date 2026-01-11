@@ -7,6 +7,9 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
 @ApiTags('CMS - About Us')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('Admin')
 @Controller('cms/about-us')
 export class AboutUsController {
     constructor(private readonly aboutUsService: AboutUsService) { }
@@ -44,18 +47,12 @@ export class AboutUsController {
     }
 
     @Post()
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('Admin')
     @ApiOperation({ summary: 'Create about us section' })
     create(@Body() dto: CreateAboutUsDto, @Request() req) {
         return this.aboutUsService.create(dto, req.user?.name);
     }
 
     @Put(':uuid')
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('Admin')
     @ApiOperation({ summary: 'Update about us section' })
     update(
         @Param('uuid', ParseUUIDPipe) uuid: string,
@@ -66,9 +63,6 @@ export class AboutUsController {
     }
 
     @Delete(':uuid')
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('Admin')
     @ApiOperation({ summary: 'Delete about us section' })
     remove(@Param('uuid', ParseUUIDPipe) uuid: string, @Request() req) {
         return this.aboutUsService.remove(uuid, req.user?.name);

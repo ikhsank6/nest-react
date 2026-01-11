@@ -7,12 +7,15 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
 @ApiTags('CMS - Carousel')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('Admin')
 @Controller('cms/carousel')
 export class CarouselController {
   constructor(private readonly carouselService: CarouselService) { }
 
   @Get()
-  @ApiOperation({ summary: 'Get all carousels (public)' })
+  @ApiOperation({ summary: 'Get all carousels' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'search', required: false })
@@ -38,27 +41,18 @@ export class CarouselController {
   }
 
   @Post()
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Create carousel' })
   create(@Body() dto: CreateCarouselDto, @Request() req) {
     return this.carouselService.create(dto, req.user?.name);
   }
 
   @Post('reorder')
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Reorder carousels' })
   reorder(@Body() dto: ReorderCarouselDto) {
     return this.carouselService.reorder(dto);
   }
 
   @Put(':uuid')
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Update carousel' })
   update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
@@ -69,9 +63,6 @@ export class CarouselController {
   }
 
   @Delete(':uuid')
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Delete carousel' })
   remove(@Param('uuid', ParseUUIDPipe) uuid: string, @Request() req) {
     return this.carouselService.remove(uuid, req.user?.name);

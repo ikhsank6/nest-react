@@ -7,12 +7,15 @@ import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
 @ApiTags('CMS - News')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('Admin')
 @Controller('cms/news')
 export class NewsController {
-  constructor(private readonly newsService: NewsService) {}
+  constructor(private readonly newsService: NewsService) { }
 
   @Get()
-  @ApiOperation({ summary: 'Get all news (public)' })
+  @ApiOperation({ summary: 'Get all news' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'search', required: false })
@@ -35,7 +38,7 @@ export class NewsController {
   }
 
   @Get('slug/:slug')
-  @ApiOperation({ summary: 'Get news by slug (public, increments view count)' })
+  @ApiOperation({ summary: 'Get news by slug (increments view count)' })
   findBySlug(@Param('slug') slug: string) {
     return this.newsService.findBySlug(slug);
   }
@@ -47,18 +50,12 @@ export class NewsController {
   }
 
   @Post()
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Create news' })
   create(@Body() dto: CreateNewsDto, @Request() req) {
     return this.newsService.create(dto, req.user?.name);
   }
 
   @Put(':uuid')
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Update news' })
   update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
@@ -69,9 +66,6 @@ export class NewsController {
   }
 
   @Delete(':uuid')
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('Admin')
   @ApiOperation({ summary: 'Delete news' })
   remove(@Param('uuid', ParseUUIDPipe) uuid: string, @Request() req) {
     return this.newsService.remove(uuid, req.user?.name);
