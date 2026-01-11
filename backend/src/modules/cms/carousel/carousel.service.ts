@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCarouselDto, UpdateCarouselDto } from './dto/carousel.dto';
+import { buildPaginatedResponse } from '../../../common/utils/pagination.util';
 
 @Injectable()
 export class CarouselService {
@@ -23,32 +24,49 @@ export class CarouselService {
     }
 
     const [carousels, total] = await Promise.all([
-      this.prisma.carousel.findMany({
+      (this.prisma as any).carousel.findMany({
         where: whereClause,
+        include: {
+          media: {
+            select: {
+              uuid: true,
+              filename: true,
+              originalName: true,
+            },
+          },
+        },
         orderBy: { order: 'asc' },
         skip,
         take: limit,
       }),
-      this.prisma.carousel.count({ where: whereClause }),
+      (this.prisma as any).carousel.count({ where: whereClause }),
     ]);
 
-    return {
-      message: 'Daftar carousel berhasil diambil',
-      data: carousels,
-      meta: {
-        page: {
-          total,
-          current_page: page,
-          per_page: limit,
-          from: skip + 1,
-        },
-      },
-    };
+    const items = carousels.map((c: any) => ({
+      ...c,
+      media: c.media ? {
+        uuid: c.media.uuid,
+        filename: c.media.filename,
+        original_name: c.media.originalName,
+        url: `/upload/images/${c.media.uuid}`,
+      } : null,
+    }));
+
+    return buildPaginatedResponse(items, total, page, limit, 'Daftar carousel berhasil diambil');
   }
 
   async findOne(uuid: string) {
-    const carousel = await this.prisma.carousel.findFirst({
+    const carousel = await (this.prisma as any).carousel.findFirst({
       where: { uuid, deletedAt: null },
+      include: {
+        media: {
+          select: {
+            uuid: true,
+            filename: true,
+            originalName: true,
+          },
+        },
+      },
     });
 
     if (!carousel) {
@@ -57,14 +75,33 @@ export class CarouselService {
 
     return {
       message: 'Detail carousel berhasil diambil',
-      data: carousel,
+      data: carousel ? {
+        ...carousel,
+        media: (carousel as any).media ? {
+          uuid: (carousel as any).media.uuid,
+          filename: (carousel as any).media.filename,
+          original_name: (carousel as any).media.originalName,
+          url: `/upload/images/${(carousel as any).media.uuid}`,
+        } : null,
+      } : null,
     };
   }
 
   async create(dto: CreateCarouselDto, createdBy?: string) {
-    const carousel = await this.prisma.carousel.create({
+    const { mediaUuid, ...data } = dto;
+    let mediaId: number | undefined = undefined;
+
+    if (mediaUuid) {
+      const media = await (this.prisma as any).media.findUnique({
+        where: { uuid: mediaUuid },
+      });
+      if (media) mediaId = media.id;
+    }
+
+    const carousel = await (this.prisma as any).carousel.create({
       data: {
-        ...dto,
+        ...data,
+        mediaId,
         createdBy,
         updatedBy: createdBy,
       },
@@ -77,7 +114,7 @@ export class CarouselService {
   }
 
   async update(uuid: string, dto: UpdateCarouselDto, updatedBy?: string) {
-    const existing = await this.prisma.carousel.findFirst({
+    const existing = await (this.prisma as any).carousel.findFirst({
       where: { uuid, deletedAt: null },
     });
 
@@ -85,10 +122,21 @@ export class CarouselService {
       throw new NotFoundException('Carousel tidak ditemukan');
     }
 
-    const carousel = await this.prisma.carousel.update({
+    const { mediaUuid, ...data } = dto;
+    let mediaId: number | undefined = undefined;
+
+    if (mediaUuid) {
+      const media = await (this.prisma as any).media.findUnique({
+        where: { uuid: mediaUuid },
+      });
+      if (media) mediaId = media.id;
+    }
+
+    const carousel = await (this.prisma as any).carousel.update({
       where: { id: existing.id },
       data: {
-        ...dto,
+        ...data,
+        mediaId,
         updatedBy,
       },
     });
@@ -100,7 +148,7 @@ export class CarouselService {
   }
 
   async remove(uuid: string, deletedBy?: string) {
-    const existing = await this.prisma.carousel.findFirst({
+    const existing = await (this.prisma as any).carousel.findFirst({
       where: { uuid, deletedAt: null },
     });
 
@@ -108,7 +156,7 @@ export class CarouselService {
       throw new NotFoundException('Carousel tidak ditemukan');
     }
 
-    await this.prisma.carousel.update({
+    await (this.prisma as any).carousel.update({
       where: { id: existing.id },
       data: {
         deletedAt: new Date(),

@@ -12,6 +12,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { type AboutUsFormData } from '@/lib/cms-validations';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 interface AboutUsFormDrawerProps {
   open: boolean;
@@ -94,9 +95,13 @@ export function AboutUsFormDrawer({
             name="image"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>URL Gambar</FormLabel>
+                <FormLabel>Gambar</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://example.com/image.jpg (opsional)" {...field} disabled={loading} />
+                  <ImageUpload 
+                    value={field.value} 
+                    onChange={field.onChange} 
+                    disabled={loading} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

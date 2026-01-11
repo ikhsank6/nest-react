@@ -42,11 +42,12 @@ export default function CarouselList() {
     defaultValues: {
       title: '',
       subtitle: '',
-      image: '',
+      image: null,
+      mediaUuid: '',
       link: '',
       order: 0,
       isActive: true,
-    },
+    } as any,
   });
 
   const handleSearch = (val: string) => setSearch(val);
@@ -55,7 +56,7 @@ export default function CarouselList() {
   const handleRefresh = () => fetchData();
 
   const openCreateDrawer = () => {
-    form.reset({ title: '', subtitle: '', image: '', link: '', order: 0, isActive: true });
+    form.reset({ title: '', subtitle: '', image: null, mediaUuid: '', link: '', order: 0, isActive: true });
     setSelectedItem(null);
     setDrawerMode('create');
     setDrawerOpen(true);
@@ -66,7 +67,8 @@ export default function CarouselList() {
     form.reset({
       title: item.title,
       subtitle: item.subtitle || '',
-      image: item.image,
+      image: item.media || item.image || null,
+      mediaUuid: item.media?.uuid || '',
       link: item.link || '',
       order: item.order,
       isActive: item.isActive,
@@ -90,11 +92,22 @@ export default function CarouselList() {
   const handleSubmit = async (data: CarouselFormData) => {
     setSubmitting(true);
     try {
+      // Extract image URL and mediaUuid from Media object if present
+      const payload = {
+        ...data,
+        image: data.image && typeof data.image === 'object' && 'url' in data.image 
+          ? data.image.url 
+          : (typeof data.image === 'string' ? data.image : null),
+        mediaUuid: data.image && typeof data.image === 'object' && 'uuid' in data.image 
+          ? data.image.uuid 
+          : data.mediaUuid,
+      };
+
       if (drawerMode === 'create') {
-        await carouselService.create(data);
+        await carouselService.create(payload);
         showSuccess('Carousel berhasil dibuat');
       } else if (drawerMode === 'edit' && selectedItem) {
-        await carouselService.update(selectedItem.uuid, data);
+        await carouselService.update(selectedItem.uuid, payload);
         showSuccess('Carousel berhasil diupdate');
       }
       closeDrawer();

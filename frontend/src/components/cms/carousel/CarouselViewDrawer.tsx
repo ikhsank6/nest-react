@@ -2,6 +2,7 @@ import { ViewSheet, FieldDisplay } from '@/components/ui/form-sheet';
 import { type Carousel } from '@/services/carousel.service';
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { env } from '@/config/env';
 
 interface CarouselViewDrawerProps {
   open: boolean;
@@ -23,7 +24,18 @@ export function CarouselViewDrawer({ open, onOpenChange, carousel, onEdit }: Car
     >
       <FieldDisplay label="Judul" value={carousel.title} />
       <FieldDisplay label="Subtitle" value={carousel.subtitle || '-'} />
-      <FieldDisplay label="Gambar" value={carousel.image} />
+      <FieldDisplay 
+        label="Gambar" 
+        value={
+          <div className="mt-2 w-full max-w-sm rounded-lg overflow-hidden border bg-muted">
+            <img 
+              src={carousel.media ? env.API_URL + (carousel.media as any).url : carousel.image || ''} 
+              alt={carousel.title}
+              className="w-full aspect-video object-cover"
+            />
+          </div>
+        } 
+      />
       <FieldDisplay label="Link" value={carousel.link || '-'} />
       <FieldDisplay label="Urutan" value={carousel.order} />
       <FieldDisplay

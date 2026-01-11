@@ -11,6 +11,7 @@ export interface News {
     isPublished: boolean;
     publishedAt: string | null;
     viewCount: number;
+    createdBy?: string;
     createdAt: string;
     updatedAt: string;
     category: {

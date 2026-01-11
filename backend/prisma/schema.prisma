@@ -123,7 +123,9 @@ model Carousel {
   uuid        String    @unique @default(uuid())
   title       String
   subtitle    String?
-  image       String                           // Image path
+  image       String?                          // Keep as optional for backward compatibility or direct path
+  mediaId     Int?                             // Link to Media table
+  media       Media?    @relation(fields: [mediaId], references: [id])
   link        String?                          // Optional link when clicked
   order       Int       @default(0)
   isActive    Boolean   @default(true)
@@ -135,6 +137,25 @@ model Carousel {
   deletedBy   String?
 
   @@map("carousels")
+}
+
+model Media {
+  id            Int       @id @default(autoincrement())
+  uuid          String    @unique @default(uuid())
+  filename      String
+  originalName  String    @map("original_name")
+  mimeType      String    @map("mime_type")
+  size          Int
+  path          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  createdBy     String?
+  updatedBy     String?
+  deletedBy     String?
+  carousels     Carousel[]
+
+  @@map("media")
 }
 
 model NewsCategory {

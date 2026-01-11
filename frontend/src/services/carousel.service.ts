@@ -4,7 +4,12 @@ export interface Carousel {
     uuid: string;
     title: string;
     subtitle: string | null;
-    image: string;
+    image: string | null;
+    media?: {
+        uuid: string;
+        filename: string;
+        original_name: string;
+    } | null;
     link: string | null;
     order: number;
     isActive: boolean;
@@ -16,7 +21,8 @@ export interface Carousel {
 export interface CreateCarouselData {
     title: string;
     subtitle?: string;
-    image: string;
+    image?: any;
+    mediaUuid?: string;
     link?: string;
     order?: number;
     isActive?: boolean;
@@ -25,7 +31,8 @@ export interface CreateCarouselData {
 export interface UpdateCarouselData {
     title?: string;
     subtitle?: string;
-    image?: string;
+    image?: any;
+    mediaUuid?: string;
     link?: string;
     order?: number;
     isActive?: boolean;

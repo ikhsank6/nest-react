@@ -3,10 +3,11 @@ import { z } from 'zod';
 // Carousel schemas
 export const carouselFormSchema = z.object({
     title: z.string().min(1, 'Judul harus diisi').max(100, 'Judul maksimal 100 karakter'),
-    subtitle: z.string().max(200, 'Subtitle maksimal 200 karakter').optional().or(z.literal('')),
-    image: z.string().min(1, 'URL gambar harus diisi'),
-    link: z.string().max(255, 'Link maksimal 255 karakter').optional().or(z.literal('')),
-    order: z.coerce.number().int().min(0, 'Urutan minimal 0').optional(),
+    subtitle: z.string().optional().or(z.literal('')),
+    image: z.any().optional().nullable(),
+    mediaUuid: z.string().optional().or(z.literal('')),
+    link: z.string().optional().or(z.literal('')),
+    order: z.coerce.number().optional(),
     isActive: z.boolean().optional(),
 });
 
@@ -40,7 +41,7 @@ export const newsFormSchema = z.object({
     slug: z.string().min(1, 'Slug harus diisi').max(200, 'Slug maksimal 200 karakter'),
     excerpt: z.string().max(500, 'Ringkasan maksimal 500 karakter').optional().or(z.literal('')),
     content: z.string().min(1, 'Konten harus diisi'),
-    featuredImage: z.string().max(255, 'URL gambar maksimal 255 karakter').optional().or(z.literal('')),
+    image: z.string().max(255, 'URL gambar maksimal 255 karakter').optional().or(z.literal('')),
     categoryUuid: z.string().min(1, 'Kategori harus dipilih'),
     publishedAt: z.string().optional().or(z.literal('')),
     isPublished: z.boolean().optional(),

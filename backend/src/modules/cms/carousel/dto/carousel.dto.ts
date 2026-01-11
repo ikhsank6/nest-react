@@ -29,6 +29,11 @@ export class CreateCarouselDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Media UUID' })
+  @IsOptional()
+  @IsString()
+  mediaUuid?: string;
 }
 
 export class UpdateCarouselDto {
@@ -61,4 +66,9 @@ export class UpdateCarouselDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Media UUID' })
+  @IsOptional()
+  @IsString()
+  mediaUuid?: string;
 }

@@ -11,6 +11,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { type CarouselFormData } from '@/lib/cms-validations';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 interface CarouselFormDrawerProps {
   open: boolean;
@@ -74,9 +75,20 @@ export function CarouselFormDrawer({
             name="image"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>URL Gambar <span className="text-destructive">*</span></FormLabel>
+                <FormLabel>Gambar <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
-                  <Input placeholder="https://example.com/image.jpg" {...field} disabled={loading} />
+                  <ImageUpload 
+                    value={field.value} 
+                    onChange={(media) => {
+                      field.onChange(media);
+                      if (media && typeof media === 'object' && 'uuid' in media) {
+                        form.setValue('mediaUuid', media.uuid);
+                      } else {
+                        form.setValue('mediaUuid', undefined);
+                      }
+                    }} 
+                    disabled={loading} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
