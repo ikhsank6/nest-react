@@ -69,10 +69,16 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     // Use centralized error message extraction
     const message = getErrorMessage(error);
+
+    // Only show toast if not on login page with 401 (invalid credentials is expected)
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+
+    // Show error toast
     toast.error(message);
 
     // Handle 401 or 403 - logout and redirect to login
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    // But NOT for login/register requests (401 means wrong credentials, not session expired)
+    if ((error.response?.status === 401 || error.response?.status === 403) && !isLoginRequest) {
       useAuthStore.getState().logout();
       window.location.href = '/login';
     }
