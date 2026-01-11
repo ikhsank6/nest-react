@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateNewsCategoryDto, UpdateNewsCategoryDto } from './dto/news-category.dto';
+import { buildPaginatedResponse } from '../../../common/utils/pagination.util';
+import { NewsCategoryResource } from './resources/news-category.resource';
 
 @Injectable()
 export class NewsCategoryService {
@@ -38,18 +40,13 @@ export class NewsCategoryService {
       this.prisma.newsCategory.count({ where: whereClause }),
     ]);
 
-    return {
-      message: 'Daftar kategori berita berhasil diambil',
-      data: categories,
-      meta: {
-        page: {
-          total,
-          current_page: page,
-          per_page: limit,
-          from: skip + 1,
-        },
-      },
-    };
+    return buildPaginatedResponse(
+      NewsCategoryResource.collection(categories),
+      total,
+      page,
+      limit,
+      'Daftar kategori berita berhasil diambil',
+    );
   }
 
   async findOne(uuid: string) {
@@ -68,7 +65,7 @@ export class NewsCategoryService {
 
     return {
       message: 'Detail kategori berhasil diambil',
-      data: category,
+      data: new NewsCategoryResource(category),
     };
   }
 
@@ -95,7 +92,7 @@ export class NewsCategoryService {
 
     return {
       message: 'Kategori berhasil dibuat',
-      data: category,
+      data: new NewsCategoryResource(category),
     };
   }
 
@@ -136,7 +133,7 @@ export class NewsCategoryService {
 
     return {
       message: 'Kategori berhasil diupdate',
-      data: category,
+      data: new NewsCategoryResource(category),
     };
   }
 

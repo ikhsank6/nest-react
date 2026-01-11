@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCarouselDto, UpdateCarouselDto } from './dto/carousel.dto';
 import { buildPaginatedResponse } from '../../../common/utils/pagination.util';
+import { CarouselResource } from './resources/carousel.resource';
 
 @Injectable()
 export class CarouselService {
@@ -26,15 +27,7 @@ export class CarouselService {
     const [carousels, total] = await Promise.all([
       (this.prisma as any).carousel.findMany({
         where: whereClause,
-        include: {
-          media: {
-            select: {
-              uuid: true,
-              filename: true,
-              originalName: true,
-            },
-          },
-        },
+        include: { media: true },
         orderBy: { order: 'asc' },
         skip,
         take: limit,
@@ -42,31 +35,19 @@ export class CarouselService {
       (this.prisma as any).carousel.count({ where: whereClause }),
     ]);
 
-    const items = carousels.map((c: any) => ({
-      ...c,
-      media: c.media ? {
-        uuid: c.media.uuid,
-        filename: c.media.filename,
-        original_name: c.media.originalName,
-        url: `/upload/images/${c.media.uuid}`,
-      } : null,
-    }));
-
-    return buildPaginatedResponse(items, total, page, limit, 'Daftar carousel berhasil diambil');
+    return buildPaginatedResponse(
+      CarouselResource.collection(carousels),
+      total,
+      page,
+      limit,
+      'Daftar carousel berhasil diambil',
+    );
   }
 
   async findOne(uuid: string) {
     const carousel = await (this.prisma as any).carousel.findFirst({
       where: { uuid, deletedAt: null },
-      include: {
-        media: {
-          select: {
-            uuid: true,
-            filename: true,
-            originalName: true,
-          },
-        },
-      },
+      include: { media: true },
     });
 
     if (!carousel) {
@@ -75,15 +56,7 @@ export class CarouselService {
 
     return {
       message: 'Detail carousel berhasil diambil',
-      data: carousel ? {
-        ...carousel,
-        media: (carousel as any).media ? {
-          uuid: (carousel as any).media.uuid,
-          filename: (carousel as any).media.filename,
-          original_name: (carousel as any).media.originalName,
-          url: `/upload/images/${(carousel as any).media.uuid}`,
-        } : null,
-      } : null,
+      data: new CarouselResource(carousel),
     };
   }
 
@@ -105,11 +78,12 @@ export class CarouselService {
         createdBy,
         updatedBy: createdBy,
       },
+      include: { media: true },
     });
 
     return {
       message: 'Carousel berhasil dibuat',
-      data: carousel,
+      data: new CarouselResource(carousel),
     };
   }
 
@@ -139,11 +113,12 @@ export class CarouselService {
         mediaId,
         updatedBy,
       },
+      include: { media: true },
     });
 
     return {
       message: 'Carousel berhasil diupdate',
-      data: carousel,
+      data: new CarouselResource(carousel),
     };
   }
 

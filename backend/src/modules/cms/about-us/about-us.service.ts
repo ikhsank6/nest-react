@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAboutUsDto, UpdateAboutUsDto } from './dto/about-us.dto';
+import { buildPaginatedResponse } from '../../../common/utils/pagination.util';
+import { AboutUsResource } from './resources/about-us.resource';
 
 @Injectable()
 export class AboutUsService {
@@ -33,18 +35,13 @@ export class AboutUsService {
             this.prisma.aboutUs.count({ where: whereClause }),
         ]);
 
-        return {
-            message: 'Daftar section About Us berhasil diambil',
-            data: sections,
-            meta: {
-                page: {
-                    total,
-                    current_page: page,
-                    per_page: limit,
-                    from: skip + 1,
-                },
-            },
-        };
+        return buildPaginatedResponse(
+            AboutUsResource.collection(sections),
+            total,
+            page,
+            limit,
+            'Daftar section About Us berhasil diambil',
+        );
     }
 
     async findOne(uuid: string) {
@@ -58,7 +55,7 @@ export class AboutUsService {
 
         return {
             message: 'Detail section berhasil diambil',
-            data: section,
+            data: new AboutUsResource(section),
         };
     }
 
@@ -73,7 +70,7 @@ export class AboutUsService {
 
         return {
             message: 'Detail section berhasil diambil',
-            data: section,
+            data: new AboutUsResource(section),
         };
     }
 
@@ -97,7 +94,7 @@ export class AboutUsService {
 
         return {
             message: 'Section berhasil dibuat',
-            data: section,
+            data: new AboutUsResource(section),
         };
     }
 
@@ -131,7 +128,7 @@ export class AboutUsService {
 
         return {
             message: 'Section berhasil diupdate',
-            data: section,
+            data: new AboutUsResource(section),
         };
     }
 

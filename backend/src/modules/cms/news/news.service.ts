@@ -1,27 +1,29 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateNewsDto, UpdateNewsDto } from './dto/news.dto';
+import { buildPaginatedResponse } from '../../../common/utils/pagination.util';
+import { NewsResource } from './resources/news.resource';
 
 @Injectable()
 export class NewsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findAll(page = 1, limit = 10, search?: string, categorySlug?: string, publishedOnly = true) {
     const skip = (page - 1) * limit;
-    
+
     const whereClause: any = { deletedAt: null };
-    
+
     if (publishedOnly) {
       whereClause.isPublished = true;
     }
-    
+
     if (search) {
       whereClause.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { excerpt: { contains: search, mode: 'insensitive' } },
       ];
     }
-    
+
     if (categorySlug) {
       whereClause.category = { slug: categorySlug, deletedAt: null };
     }
@@ -41,18 +43,13 @@ export class NewsService {
       this.prisma.news.count({ where: whereClause }),
     ]);
 
-    return {
-      message: 'Daftar berita berhasil diambil',
-      data: news,
-      meta: {
-        page: {
-          total,
-          current_page: page,
-          per_page: limit,
-          from: skip + 1,
-        },
-      },
-    };
+    return buildPaginatedResponse(
+      NewsResource.collection(news),
+      total,
+      page,
+      limit,
+      'Daftar berita berhasil diambil',
+    );
   }
 
   async findOne(uuid: string) {
@@ -71,7 +68,7 @@ export class NewsService {
 
     return {
       message: 'Detail berita berhasil diambil',
-      data: news,
+      data: new NewsResource(news),
     };
   }
 
@@ -97,7 +94,7 @@ export class NewsService {
 
     return {
       message: 'Detail berita berhasil diambil',
-      data: { ...news, viewCount: news.viewCount + 1 },
+      data: new NewsResource({ ...news, viewCount: news.viewCount + 1 }),
     };
   }
 
@@ -139,7 +136,7 @@ export class NewsService {
 
     return {
       message: 'Berita berhasil dibuat',
-      data: news,
+      data: new NewsResource(news),
     };
   }
 
@@ -196,7 +193,7 @@ export class NewsService {
 
     return {
       message: 'Berita berhasil diupdate',
-      data: news,
+      data: new NewsResource(news),
     };
   }
 
