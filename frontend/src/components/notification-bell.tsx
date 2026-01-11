@@ -15,14 +15,17 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { cn, showSuccess, showError } from '@/lib/utils';
+import { useRequestGuard } from '@/hooks/useRequestGuard';
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+    // Hook to prevent duplicate requests (React StrictMode causes double render)
+  const { withRequestGuard } = useRequestGuard();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = withRequestGuard(async () => {
     setLoading(true);
     try {
       const response = await notificationService.getAll(1, 10, true);
@@ -34,7 +37,7 @@ export function NotificationBell() {
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   useEffect(() => {
     fetchNotifications();
