@@ -1,13 +1,13 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Menu, X, Sun, Moon } from 'lucide-react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Menu, X, Sun, Moon, ArrowRight } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 
 export default function WebsiteLayout() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,13 +18,13 @@ export default function WebsiteLayout() {
   }, []);
 
   useEffect(() => {
-    setIsMenuOpen(false);
+    setIsMobileMenuOpen(false);
   }, [location]);
 
   const navLinks = [
-    { path: '/', label: 'Home' },
-    { path: '/news', label: 'News' },
-    { path: '/about', label: 'About Us' },
+    { name: 'Home', path: '/' },
+    { name: 'News', path: '/news' },
+    { name: 'About Us', path: '/about' },
   ];
 
   const isActive = (path: string) => {
@@ -34,48 +34,45 @@ export default function WebsiteLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navbar */}
+      {/* Navigation */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? 'bg-background/80 backdrop-blur-xl shadow-lg border-b border-border/50'
+            ? 'bg-background/95 backdrop-blur-xl border-b border-border shadow-sm'
             : 'bg-transparent'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex items-center justify-between h-16 md:h-20">
             {/* Logo */}
-            <Link
-              to="/"
-              className="flex items-center gap-2 text-xl font-bold bg-gradient-to-r from-orange-500 to-pink-500 text-transparent bg-clip-text"
-            >
-              <span className="text-2xl">🚀</span>
-              NestReact
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
+                <span className="text-background font-bold text-sm">N</span>
+              </div>
+              <span className="font-bold text-xl tracking-tight">
+                NestReact
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`relative py-2 text-sm font-medium transition-colors hover:text-orange-500 ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     isActive(link.path)
-                      ? 'text-orange-500'
-                      : 'text-foreground/80'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
-                  {link.label}
-                  {isActive(link.path) && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full" />
-                  )}
+                  {link.name}
                 </Link>
               ))}
             </div>
 
-            {/* Right Section */}
-            <div className="flex items-center gap-4">
-              {/* Theme Toggle */}
+            {/* Desktop Actions */}
+            <div className="hidden md:flex items-center gap-3">
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -86,24 +83,35 @@ export default function WebsiteLayout() {
                   <Moon className="w-5 h-5" />
                 )}
               </button>
-
-              {/* Login Button */}
               <Link
                 to="/auth/login"
-                className="hidden md:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-pink-500 rounded-full hover:opacity-90 transition-opacity shadow-lg shadow-orange-500/25"
+                className="px-5 py-2.5 bg-foreground text-background rounded-full text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
               >
-                Login
+                Get Started
+                <ArrowRight className="w-4 h-4" />
               </Link>
+            </div>
 
-              {/* Mobile Menu Button */}
+            {/* Mobile Menu Button */}
+            <div className="flex md:hidden items-center gap-2">
               <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="p-2 rounded-full hover:bg-muted transition-colors"
               >
-                {isMenuOpen ? (
-                  <X className="w-6 h-6" />
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5" />
                 ) : (
-                  <Menu className="w-6 h-6" />
+                  <Moon className="w-5 h-5" />
+                )}
+              </button>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 rounded-full hover:bg-muted transition-colors"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
                 )}
               </button>
             </div>
@@ -111,75 +119,85 @@ export default function WebsiteLayout() {
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border">
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-background border-b border-border">
             <div className="px-4 py-4 space-y-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                  className={`block px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     isActive(link.path)
-                      ? 'bg-gradient-to-r from-orange-500/10 to-pink-500/10 text-orange-500'
-                      : 'hover:bg-muted text-foreground/80'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
-                  {link.label}
+                  {link.name}
                 </Link>
               ))}
               <Link
                 to="/auth/login"
-                className="block w-full mt-4 px-4 py-3 text-center text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-pink-500 rounded-xl"
+                className="block px-4 py-3 bg-foreground text-background rounded-xl text-sm font-medium text-center mt-4"
               >
-                Login
+                Get Started
               </Link>
             </div>
           </div>
         )}
       </nav>
 
-      {/* Page Content */}
+      {/* Main Content */}
       <main>
         <Outlet />
       </main>
 
       {/* Footer */}
-      <footer className="bg-card border-t border-border mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="bg-foreground text-background py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-12">
             {/* Brand */}
-            <div className="col-span-1 md:col-span-2">
-              <Link
-                to="/"
-                className="flex items-center gap-2 text-xl font-bold bg-gradient-to-r from-orange-500 to-pink-500 text-transparent bg-clip-text mb-4"
-              >
-                <span className="text-2xl">🚀</span>
-                NestReact
+            <div className="md:col-span-1">
+              <Link to="/" className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center">
+                  <span className="text-foreground font-bold text-sm">N</span>
+                </div>
+                <span className="font-bold text-xl">NestReact</span>
               </Link>
-              <p className="text-muted-foreground text-sm max-w-sm">
-                Building modern web applications with cutting-edge technology.
-                Fast, secure, and scalable solutions for your business.
+              <p className="text-background/60 text-sm leading-relaxed">
+                Building modern web applications with cutting-edge technology and beautiful design.
               </p>
             </div>
 
-            {/* Quick Links */}
+            {/* Navigation */}
             <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <h4 className="font-semibold mb-4">Navigation</h4>
+              <ul className="space-y-3">
+                {navLinks.map((link) => (
+                  <li key={link.path}>
+                    <Link
+                      to={link.path}
+                      className="text-background/60 hover:text-background text-sm transition-colors"
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="font-semibold mb-4">Legal</h4>
+              <ul className="space-y-3">
                 <li>
-                  <Link to="/" className="hover:text-orange-500 transition-colors">
-                    Home
-                  </Link>
+                  <a href="#" className="text-background/60 hover:text-background text-sm transition-colors">
+                    Privacy Policy
+                  </a>
                 </li>
                 <li>
-                  <Link to="/news" className="hover:text-orange-500 transition-colors">
-                    News
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/about" className="hover:text-orange-500 transition-colors">
-                    About Us
-                  </Link>
+                  <a href="#" className="text-background/60 hover:text-background text-sm transition-colors">
+                    Terms of Service
+                  </a>
                 </li>
               </ul>
             </div>
@@ -187,25 +205,27 @@ export default function WebsiteLayout() {
             {/* Contact */}
             <div>
               <h4 className="font-semibold mb-4">Contact</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>contact@nestreact.com</li>
-                <li>+1 234 567 890</li>
+              <ul className="space-y-3 text-background/60 text-sm">
+                <li>hello@nestreact.com</li>
+                <li>+62 123 456 7890</li>
               </ul>
             </div>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="border-t border-background/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-background/40 text-sm">
               © {new Date().getFullYear()} NestReact. All rights reserved.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-orange-500 transition-colors">
-                <span className="sr-only">Twitter</span>
-                𝕏
+              <a href="#" className="text-background/40 hover:text-background transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                </svg>
               </a>
-              <a href="#" className="text-muted-foreground hover:text-orange-500 transition-colors">
-                <span className="sr-only">GitHub</span>
-                GitHub
+              <a href="#" className="text-background/40 hover:text-background transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                </svg>
               </a>
             </div>
           </div>

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Eye, Share2, Facebook, Twitter } from 'lucide-react';
+import { ArrowLeft, Calendar, Eye, Share2, ArrowRight } from 'lucide-react';
 import { websiteService, type NewsItem } from '@/services/website.service';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// Base URL without /api for image paths that already include /api
+const BASE_URL = API_URL.replace('/api', '');
 
 export default function NewsDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -43,7 +45,8 @@ export default function NewsDetailPage() {
   const getImageUrl = (path: string | null) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
-    return `${API_URL}${path}`;
+    // path already includes /api prefix from backend
+    return `${BASE_URL}${path}`;
   };
 
   const formatDate = (date: string) => {
@@ -73,7 +76,10 @@ export default function NewsDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-foreground/20 border-t-foreground rounded-full animate-spin"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -86,7 +92,7 @@ export default function NewsDetailPage() {
           <h1 className="text-2xl font-bold mb-4">{error || 'News not found'}</h1>
           <Link
             to="/news"
-            className="inline-flex items-center gap-2 text-orange-500 hover:underline"
+            className="inline-flex items-center gap-2 text-lime-600 dark:text-lime-400 hover:gap-3 transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to News
@@ -97,9 +103,9 @@ export default function NewsDetailPage() {
   }
 
   return (
-    <div className="pt-16">
+    <div className="pt-16 md:pt-20">
       {/* Hero Image */}
-      <section className="relative h-[50vh] min-h-[400px] overflow-hidden">
+      <section className="relative h-[50vh] min-h-[400px] max-h-[600px] overflow-hidden bg-muted">
         {news.image ? (
           <img
             src={getImageUrl(news.image.path) || ''}
@@ -107,7 +113,9 @@ export default function NewsDetailPage() {
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-pink-500/20" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-8xl">📰</span>
+          </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
@@ -124,7 +132,7 @@ export default function NewsDetailPage() {
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="max-w-4xl mx-auto">
             {news.category && (
-              <span className="inline-block px-3 py-1 bg-orange-500 text-white text-sm font-medium rounded-full mb-4">
+              <span className="inline-block px-3 py-1 bg-lime-500 text-white text-sm font-medium rounded-full mb-4">
                 {news.category.name}
               </span>
             )}
@@ -153,7 +161,7 @@ export default function NewsDetailPage() {
             <span className="text-sm text-muted-foreground">Share:</span>
             <button
               onClick={handleShare}
-              className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+              className="p-3 rounded-full bg-muted hover:bg-muted/80 transition-colors"
             >
               <Share2 className="w-4 h-4" />
             </button>
@@ -161,17 +169,21 @@ export default function NewsDetailPage() {
               href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-[#1877F2] text-white hover:opacity-90 transition-opacity"
+              className="p-3 rounded-full bg-[#1877F2] text-white hover:opacity-90 transition-opacity"
             >
-              <Facebook className="w-4 h-4" />
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
             </a>
             <a
               href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(news.title)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-black text-white hover:opacity-90 transition-opacity"
+              className="p-3 rounded-full bg-foreground text-background hover:opacity-90 transition-opacity"
             >
-              <Twitter className="w-4 h-4" />
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
             </a>
           </div>
 
@@ -184,7 +196,7 @@ export default function NewsDetailPage() {
 
           {/* Main Content */}
           <article
-            className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-orange-500 prose-img:rounded-xl"
+            className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-lime-600 dark:prose-a:text-lime-400 prose-img:rounded-xl"
             dangerouslySetInnerHTML={{ __html: news.content || '' }}
           />
         </div>
@@ -192,7 +204,7 @@ export default function NewsDetailPage() {
 
       {/* Related News */}
       {relatedNews.length > 0 && (
-        <section className="py-12 bg-muted/30">
+        <section className="py-24 bg-muted/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-2xl font-bold mb-8">Related News</h2>
             <div className="grid md:grid-cols-3 gap-8">
@@ -202,7 +214,7 @@ export default function NewsDetailPage() {
                   to={`/news/${item.slug}`}
                   className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300"
                 >
-                  <div className="relative h-40 overflow-hidden">
+                  <div className="relative h-40 overflow-hidden bg-muted">
                     {item.image ? (
                       <img
                         src={getImageUrl(item.image.path) || ''}
@@ -210,18 +222,23 @@ export default function NewsDetailPage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-orange-500/20 to-pink-500/20 flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center">
                         <span className="text-3xl">📰</span>
                       </div>
                     )}
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold line-clamp-2 group-hover:text-orange-500 transition-colors">
+                  <div className="p-5">
+                    <h3 className="font-semibold line-clamp-2 group-hover:text-lime-600 dark:group-hover:text-lime-400 transition-colors mb-2">
                       {item.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {formatDate(item.publishedAt)}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(item.publishedAt)}
+                      </p>
+                      <div className="w-8 h-8 rounded-full border border-border flex items-center justify-center group-hover:bg-foreground group-hover:text-background transition-colors">
+                        <ArrowRight className="w-3 h-3" />
+                      </div>
+                    </div>
                   </div>
                 </Link>
               ))}

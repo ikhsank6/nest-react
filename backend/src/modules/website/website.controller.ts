@@ -1,11 +1,18 @@
-import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe, Res, NotFoundException, StreamableFile } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { createReadStream, existsSync } from 'fs';
+import { join } from 'path';
 import { WebsiteService } from './website.service';
+import { MediaService } from '../../media/media.service';
 
 @ApiTags('4. Public Website')
 @Controller('website')
 export class WebsiteController {
-    constructor(private readonly websiteService: WebsiteService) { }
+    constructor(
+        private readonly websiteService: WebsiteService,
+        private readonly mediaService: MediaService,
+    ) { }
 
     @Get('home')
     @ApiOperation({ summary: 'Get homepage data (carousels, about, latest news)' })
@@ -58,5 +65,34 @@ export class WebsiteController {
     @ApiResponse({ status: 200, description: 'News categories retrieved successfully' })
     getNewsCategories() {
         return this.websiteService.getNewsCategories();
+    }
+
+    @Get('media/:uuid')
+    @ApiOperation({ summary: 'Get public media/image by UUID (no auth required)' })
+    @ApiParam({ name: 'uuid', description: 'Media UUID' })
+    @ApiResponse({ status: 200, description: 'Media file returned successfully' })
+    @ApiResponse({ status: 404, description: 'Media not found' })
+    async getMedia(@Param('uuid') uuid: string, @Res({ passthrough: true }) res: Response) {
+        const media = await this.mediaService.findByUuid(uuid);
+
+        if (!media) {
+            throw new NotFoundException('Media tidak ditemukan');
+        }
+
+        const filePath = join(process.cwd(), 'uploads', 'images', media.filename);
+
+        if (!existsSync(filePath)) {
+            throw new NotFoundException('File tidak ditemukan');
+        }
+
+        // Set content type based on mimeType
+        res.set({
+            'Content-Type': media.mimeType,
+            'Content-Disposition': `inline; filename="${media.originalName}"`,
+            'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        });
+
+        const file = createReadStream(filePath);
+        return new StreamableFile(file);
     }
 }
