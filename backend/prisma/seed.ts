@@ -54,10 +54,12 @@ async function main() {
   // Create menus
   const dashboardMenu = await prisma.menu.upsert({
     where: { id: 1 },
-    update: {},
+    update: {
+      path: '/admin/dashboard',
+    },
     create: {
       name: 'Dashboard',
-      path: '/dashboard',
+      path: '/admin/dashboard',
       icon: 'LayoutDashboard',
       order: 1,
       createdBy: 'System',
@@ -80,11 +82,11 @@ async function main() {
   const usersMenu = await prisma.menu.upsert({
     where: { id: 3 },
     update: {
-      path: '/master-data/users',
+      path: '/admin/master-data/users',
     },
     create: {
       name: 'Users',
-      path: '/master-data/users',
+      path: '/admin/master-data/users',
       icon: 'Users',
       parentId: masterMenu.id,
       order: 1,
@@ -96,11 +98,11 @@ async function main() {
   const rolesMenu = await prisma.menu.upsert({
     where: { id: 4 },
     update: {
-      path: '/master-data/roles',
+      path: '/admin/master-data/roles',
     },
     create: {
       name: 'Roles',
-      path: '/master-data/roles',
+      path: '/admin/master-data/roles',
       icon: 'Shield',
       parentId: masterMenu.id,
       order: 2,
@@ -112,11 +114,11 @@ async function main() {
   const menusMenu = await prisma.menu.upsert({
     where: { id: 5 },
     update: {
-      path: '/master-data/menus',
+      path: '/admin/master-data/menus',
     },
     create: {
       name: 'Menus',
-      path: '/master-data/menus',
+      path: '/admin/master-data/menus',
       icon: 'Menu',
       parentId: masterMenu.id,
       order: 3,
@@ -141,11 +143,11 @@ async function main() {
   const carouselMenu = await prisma.menu.upsert({
     where: { id: 7 },
     update: {
-      path: '/cms/carousel',
+      path: '/admin/cms/carousel',
     },
     create: {
       name: 'Carousel',
-      path: '/cms/carousel',
+      path: '/admin/cms/carousel',
       icon: 'Image',
       parentId: cmsMenu.id,
       order: 1,
@@ -157,11 +159,11 @@ async function main() {
   const newsCategoryMenu = await prisma.menu.upsert({
     where: { id: 8 },
     update: {
-      path: '/cms/news-category',
+      path: '/admin/cms/news-category',
     },
     create: {
       name: 'News Categories',
-      path: '/cms/news-category',
+      path: '/admin/cms/news-category',
       icon: 'FolderOpen',
       parentId: cmsMenu.id,
       order: 2,
@@ -173,11 +175,11 @@ async function main() {
   const newsMenu = await prisma.menu.upsert({
     where: { id: 9 },
     update: {
-      path: '/cms/news',
+      path: '/admin/cms/news',
     },
     create: {
       name: 'News',
-      path: '/cms/news',
+      path: '/admin/cms/news',
       icon: 'Newspaper',
       parentId: cmsMenu.id,
       order: 3,
@@ -189,11 +191,11 @@ async function main() {
   const aboutUsMenu = await prisma.menu.upsert({
     where: { id: 10 },
     update: {
-      path: '/cms/about-us',
+      path: '/admin/cms/about-us',
     },
     create: {
       name: 'About Us',
-      path: '/cms/about-us',
+      path: '/admin/cms/about-us',
       icon: 'Info',
       parentId: cmsMenu.id,
       order: 4,

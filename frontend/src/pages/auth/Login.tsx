@@ -45,7 +45,7 @@ export default function Login() {
     try {
       await authService.login(data);
       showSuccess('Login berhasil');
-      navigate('/dashboard');
+      navigate('/admin/dashboard');
     } catch (error: any) {
       const message = error?.response?.data?.message || '';
       if (message.includes('belum diverifikasi') || message.includes('not verified')) {
@@ -143,7 +143,7 @@ export default function Login() {
                   <div className="flex items-center justify-between">
                     <FormLabel>Password</FormLabel>
                     <Link
-                      to="/forgot-password"
+                      to="/auth/forgot-password"
                       className="text-xs text-primary hover:underline underline-offset-4"
                     >
                       Forgot password?
@@ -192,7 +192,7 @@ export default function Login() {
       <CardFooter className="flex flex-col gap-4 text-center">
         <div className="text-sm text-muted-foreground">
           Don't have an account?{' '}
-          <Link to="/register" className="text-primary font-medium hover:underline underline-offset-4">
+          <Link to="/auth/register" className="text-primary font-medium hover:underline underline-offset-4">
             Sign up
           </Link>
         </div>

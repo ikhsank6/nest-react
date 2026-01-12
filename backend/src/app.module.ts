@@ -13,6 +13,7 @@ import { QueueModule } from './modules/queue/queue.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { CmsModule } from './modules/cms/cms.module';
+import { WebsiteModule } from './modules/website/website.module';
 import { UploadModule } from './upload/upload.module';
 import { MediaModule } from './media/media.module';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
@@ -34,6 +35,7 @@ import { RequestContextInterceptor } from './common/interceptors/request-context
     NotificationsModule,
     ProfileModule,
     CmsModule,
+    WebsiteModule,
     UploadModule,
     MediaModule,
   ],

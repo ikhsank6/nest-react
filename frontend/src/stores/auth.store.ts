@@ -138,14 +138,14 @@ export const useAuthStore = create<AuthState>()(
       hasMenuAccess: (path: string): boolean => {
         const state = get();
         const { menus, user } = state;
-        
+
         // Admin has access to everything
         if (user?.role?.name === 'Admin') {
           return true;
         }
 
         // Dashboard is always accessible for authenticated users
-        if (path === '/dashboard' || path === '/') {
+        if (path === '/dashboard' || path === '/' || path === '/admin/dashboard' || path === '/admin') {
           return true;
         }
 
