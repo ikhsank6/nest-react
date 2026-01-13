@@ -11,13 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { type UserFormData } from '@/lib/validations';
 import { type Role } from '@/services/role.service';
 
@@ -40,6 +34,11 @@ export function UserFormDrawer({
   loading,
   roles 
 }: UserFormDrawerProps) {
+  // Transform roles to combobox options
+  const roleOptions = roles.map((role) => ({
+    value: role.uuid,
+    label: role.name,
+  }));
 
   return (
     <FormSheet
@@ -92,20 +91,17 @@ export function UserFormDrawer({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Role <span className="text-destructive">*</span></FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih role" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {roles.map((role: Role) => (
-                      <SelectItem key={role.uuid} value={role.uuid}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    options={roleOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Pilih role"
+                    searchPlaceholder="Cari role..."
+                    emptyText="Role tidak ditemukan."
+                    disabled={loading}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -137,3 +133,4 @@ export function UserFormDrawer({
     </FormSheet>
   );
 }
+
