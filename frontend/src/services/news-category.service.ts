@@ -1,4 +1,6 @@
 import api from '@/config/axios';
+import { createQueryParams } from '@/lib/utils';
+import type { TableFilters } from '@/stores/table.store';
 
 export interface NewsCategory {
     uuid: string;
@@ -27,10 +29,9 @@ export interface UpdateNewsCategoryData {
 }
 
 export const newsCategoryService = {
-    getAll: async (page = 1, limit = 10, search?: string): Promise<any> => {
-        let url = `/cms/news-category?page=${page}&limit=${limit}&all=true`;
-        if (search) url += `&search=${encodeURIComponent(search)}`;
-        const response = await api.get(url) as any;
+    getAll: async (page = 1, limit = 10, filters: TableFilters = {}): Promise<any> => {
+        const query = createQueryParams({ page, limit, all: true, ...filters });
+        const response = await api.get(`/cms/news-category?${query}`) as any;
         return response;
     },
 

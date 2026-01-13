@@ -22,16 +22,16 @@ export default function RoleList() {
     data: roles,
     loading,
     error,
-    search,
+    filters,
     page,
     limit,
     totalPages,
     totalItems,
     setPage,
     setLimit,
-    setSearch,
+    setFilters,
     refresh: fetchRoles,
-  } = useTable<Role>('roles', useCallback((p, l, s) => roleService.getAll(p, l, s), []));
+  } = useTable<Role>('roles', useCallback((p, l, f) => roleService.getAll(p, l, f), []));
   
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -57,7 +57,7 @@ export default function RoleList() {
   });
 
   const handleSearch = (val: string) => {
-    setSearch(val);
+    setFilters({ search: val || undefined });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -207,7 +207,7 @@ export default function RoleList() {
         isError={error}
         onRefresh={handleRefresh}
         searchPlaceholder="Cari role..."
-        searchValue={search}
+        searchValue={filters.search || ''}
         onSearch={handleSearch}
         emptyMessage="No roles found."
         keyExtractor={(role) => role.uuid}

@@ -46,40 +46,40 @@ export function getErrorMessage(error: unknown): string {
   // Handle AxiosError
   if (error instanceof AxiosError) {
     const data = error.response?.data as ApiErrorResponse | undefined;
-    
+
     // Check meta object first (common pattern in this app)
     if (data?.meta?.message) {
-      return data.meta.error 
+      return data.meta.error
         ? `${data.meta.message} (${data.meta.error})`
         : data.meta.message;
     }
-    
+
     // Check direct message
     if (data?.message) {
-      return data.error 
+      return data.error
         ? `${data.message} (${data.error})`
         : data.message;
     }
-    
+
     // Network error
     if (error.message === 'Network Error') {
       return 'Tidak dapat terhubung ke server';
     }
-    
+
     // Fallback to axios message
     return error.message || 'Terjadi kesalahan pada server';
   }
-  
+
   // Handle Error object
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   // Handle string
   if (typeof error === 'string') {
     return error;
   }
-  
+
   // Default fallback
   return 'Terjadi kesalahan';
 }
@@ -119,3 +119,21 @@ export function showWarning(message: string, description?: string) {
 export function showInfo(message: string, description?: string) {
   toast.info(message, { description });
 }
+
+/**
+ * Create query params string from an object
+ * Filters out null, undefined, and empty string values
+ */
+export function createQueryParams(query: Record<string, any>): string {
+  return Object.keys(query)
+    .map((key) => {
+      const value = query[key];
+      if (value !== null && value !== undefined && value !== '') {
+        return `${key}=${encodeURIComponent(value)}`;
+      }
+      return null;
+    })
+    .filter((item): item is string => item !== null)
+    .join('&');
+}
+

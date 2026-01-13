@@ -23,17 +23,19 @@ export default function MenuList() {
     data: menus,
     loading,
     error,
-    search,
+    filters,
     page,
     limit,
     totalPages,
     totalItems,
     setPage,
     setLimit,
-    setSearch,
+    setFilters,
     setData,
     refresh: fetchMenus,
-  } = useTable<Menu>('menus', useCallback((_page, _limit, search) => menuService.getAll({ search }), []));
+  } = useTable<Menu>('menus', useCallback((_page, _limit, filters) => {
+    return menuService.getAll({ search: filters.search });
+  }, []));
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -60,7 +62,7 @@ export default function MenuList() {
   });
 
   const handleSearch = (val: string) => {
-    setSearch(val);
+    setFilters({ search: val || undefined });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -295,7 +297,7 @@ export default function MenuList() {
         isError={error}
         onRefresh={handleRefresh}
         searchPlaceholder="Cari menu..."
-        searchValue={search}
+        searchValue={filters.search || ''}
         onSearch={handleSearch}
         emptyMessage="No menus found."
         keyExtractor={(menu) => menu.uuid}

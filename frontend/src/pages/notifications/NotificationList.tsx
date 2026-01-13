@@ -22,16 +22,18 @@ export default function NotificationList() {
   const {
     data: notifications,
     loading,
-    search,
+    filters,
     page,
     limit,
     totalPages,
     totalItems,
     setPage,
     setLimit,
-    setSearch,
+    setFilters,
     refresh,
-  } = useTable<Notification>('notifications', useCallback((p, l, s) => notificationService.getAll(p, l, unreadOnly, s), [unreadOnly]));
+  } = useTable<Notification>('notifications', useCallback((p, l, f) => {
+    return notificationService.getAll(p, l, unreadOnly, f.search);
+  }, [unreadOnly]));
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState<Notification | null>(null);
@@ -192,8 +194,8 @@ export default function NotificationList() {
         columns={columns}
         data={notifications || []}
         loading={loading}
-        onSearch={setSearch}
-        searchValue={search}
+        onSearch={(val) => setFilters({ search: val || undefined })}
+        searchValue={filters.search || ''}
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}

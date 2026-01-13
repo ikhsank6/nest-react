@@ -18,16 +18,22 @@ export class UsersService {
     private notificationsService: NotificationsService,
   ) { }
 
-  async findAll(page = 1, limit = 10, search?: string) {
+  async findAll(page = 1, limit = 10, search?: string, isActive?: boolean) {
     const skip = calculateSkip(page, limit);
 
     const where: any = { deletedAt: null };
 
+    // Apply search filter
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
       ];
+    }
+
+    // Apply isActive filter
+    if (isActive !== undefined) {
+      where.isActive = isActive;
     }
 
     const [users, total] = await Promise.all([

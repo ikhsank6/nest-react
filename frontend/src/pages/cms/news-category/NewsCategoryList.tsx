@@ -19,16 +19,16 @@ export default function NewsCategoryList() {
     data: categories,
     loading,
     error,
-    search,
+    filters,
     page,
     limit,
     totalPages,
     totalItems,
     setPage,
     setLimit,
-    setSearch,
+    setFilters,
     refresh: fetchData,
-  } = useTable<NewsCategory>('newsCategories', useCallback((p, l, s) => newsCategoryService.getAll(p, l, s), []));
+  } = useTable<NewsCategory>('newsCategories', useCallback((p, l, f) => newsCategoryService.getAll(p, l, f), []));
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
@@ -47,7 +47,7 @@ export default function NewsCategoryList() {
     },
   });
 
-  const handleSearch = (val: string) => setSearch(val);
+  const handleSearch = (val: string) => setFilters({ search: val || undefined });
   const handlePageChange = (p: number) => setPage(p);
   const handleLimitChange = (l: number) => setLimit(l);
   const handleRefresh = () => fetchData();
@@ -178,7 +178,7 @@ export default function NewsCategoryList() {
         isError={error}
         onRefresh={handleRefresh}
         searchPlaceholder="Cari kategori..."
-        searchValue={search}
+        searchValue={filters.search || ''}
         onSearch={handleSearch}
         emptyMessage="Tidak ada kategori."
         keyExtractor={(item) => item.uuid}

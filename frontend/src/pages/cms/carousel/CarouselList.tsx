@@ -19,17 +19,17 @@ export default function CarouselList() {
     data: carousels,
     loading,
     error,
-    search,
+    filters,
     page,
     limit,
     totalPages,
     totalItems,
     setPage,
     setLimit,
-    setSearch,
+    setFilters,
     setData,
     refresh: fetchData,
-  } = useTable<Carousel>('carousels', useCallback((p, l, s) => carouselService.getAll(p, l, s), []));
+  } = useTable<Carousel>('carousels', useCallback((p, l, f) => carouselService.getAll(p, l, f), []));
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
@@ -51,7 +51,7 @@ export default function CarouselList() {
     } as any,
   });
 
-  const handleSearch = (val: string) => setSearch(val);
+  const handleSearch = (val: string) => setFilters({ search: val || undefined });
   const handlePageChange = (p: number) => setPage(p);
   const handleLimitChange = (l: number) => setLimit(l);
   const handleRefresh = () => fetchData();
@@ -217,7 +217,7 @@ export default function CarouselList() {
         isError={error}
         onRefresh={handleRefresh}
         searchPlaceholder="Cari carousel..."
-        searchValue={search}
+        searchValue={filters.search || ''}
         onSearch={handleSearch}
         emptyMessage="Tidak ada carousel."
         keyExtractor={(item) => item.uuid}

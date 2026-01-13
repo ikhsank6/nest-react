@@ -1,10 +1,17 @@
 import { create } from 'zustand';
 
+// Filter object type that can contain multiple filter properties
+export interface TableFilters {
+  search?: string;
+  isActive?: boolean;
+  [key: string]: any;
+}
+
 export interface TableState<T = any> {
   data: T[];
   loading: boolean;
   error: boolean;
-  search: string;
+  filters: TableFilters;
   page: number;
   limit: number;
   totalPages: number;
@@ -15,7 +22,7 @@ export interface TableActions<T = any> {
   setData: (data: T[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: boolean) => void;
-  setSearch: (search: string) => void;
+  setFilters: (filters: TableFilters) => void;
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setTotalItems: (total: number) => void;
@@ -26,7 +33,7 @@ const defaultState: TableState = {
   data: [],
   loading: false,
   error: false,
-  search: '',
+  filters: {},
   page: 1,
   limit: 10,
   totalPages: 1,
@@ -38,7 +45,7 @@ interface MultiTableStore {
   setData: (key: string, data: any[]) => void;
   setLoading: (key: string, loading: boolean) => void;
   setError: (key: string, error: boolean) => void;
-  setSearch: (key: string, search: string) => void;
+  setFilters: (key: string, filters: TableFilters) => void;
   setPage: (key: string, page: number) => void;
   setLimit: (key: string, limit: number) => void;
   setTotalItems: (key: string, total: number) => void;
@@ -47,7 +54,7 @@ interface MultiTableStore {
 
 export const useTableStore = create<MultiTableStore>((set) => ({
   instances: {},
-  
+
   initTable: (key, initialState = {}) => set((state) => {
     if (state.instances[key]) return state;
     return {
@@ -79,10 +86,10 @@ export const useTableStore = create<MultiTableStore>((set) => ({
     }
   })),
 
-  setSearch: (key, search) => set((state) => ({
+  setFilters: (key, filters) => set((state) => ({
     instances: {
       ...state.instances,
-      [key]: { ...state.instances[key], search, page: 1 }
+      [key]: { ...state.instances[key], filters, page: 1 }
     }
   })),
 
@@ -103,8 +110,8 @@ export const useTableStore = create<MultiTableStore>((set) => ({
   setTotalItems: (key, total) => set((state) => ({
     instances: {
       ...state.instances,
-      [key]: { 
-        ...state.instances[key], 
+      [key]: {
+        ...state.instances[key],
         totalItems: total,
         totalPages: Math.ceil(total / (state.instances[key]?.limit || 10))
       }

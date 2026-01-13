@@ -1,4 +1,6 @@
 import api from '@/config/axios';
+import { createQueryParams } from '@/lib/utils';
+import type { TableFilters } from '@/stores/table.store';
 
 export interface Carousel {
     uuid: string;
@@ -45,10 +47,9 @@ export interface ReorderCarouselItem {
 }
 
 export const carouselService = {
-    getAll: async (page = 1, limit = 10, search?: string): Promise<any> => {
-        let url = `/cms/carousel?page=${page}&limit=${limit}&all=true`;
-        if (search) url += `&search=${encodeURIComponent(search)}`;
-        const response = await api.get(url) as any;
+    getAll: async (page = 1, limit = 10, filters: TableFilters = {}): Promise<any> => {
+        const query = createQueryParams({ page, limit, all: true, ...filters });
+        const response = await api.get(`/cms/carousel?${query}`) as any;
         return response;
     },
 

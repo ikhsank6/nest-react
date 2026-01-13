@@ -1,4 +1,6 @@
 import api from '@/config/axios';
+import { createQueryParams } from '@/lib/utils';
+import type { TableFilters } from '@/stores/table.store';
 
 export interface Role {
   uuid: string;
@@ -23,10 +25,9 @@ export interface UpdateRoleData {
 }
 
 export const roleService = {
-  getAll: async (page = 1, limit = 10, search?: string): Promise<any> => {
-    let url = `/master-data/roles?page=${page}&limit=${limit}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    const response = await api.get(url) as any;
+  getAll: async (page = 1, limit = 10, filters: TableFilters = {}): Promise<any> => {
+    const query = createQueryParams({ page, limit, ...filters });
+    const response = await api.get(`/master-data/roles?${query}`) as any;
     return response;
   },
 

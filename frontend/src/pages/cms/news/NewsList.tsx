@@ -23,16 +23,18 @@ export default function NewsList() {
     data: news,
     loading,
     error,
-    search,
+    filters,
     page,
     limit,
     totalPages,
     totalItems,
     setPage,
     setLimit,
-    setSearch,
+    setFilters,
     refresh: fetchNews,
-  } = useTable<News>('news', useCallback((p, l, s) => newsService.getAll(p, l, s, undefined, true), []));
+  } = useTable<News>('news', useCallback((p, l, f) => {
+    return newsService.getAll(p, l, f.search, undefined, true);
+  }, []));
 
   // Categories state
   const [categories, setCategories] = useState<NewsCategory[]>([]);
@@ -77,7 +79,7 @@ export default function NewsList() {
   });
 
   const handleSearch = (val: string) => {
-    setSearch(val);
+    setFilters({ search: val || undefined });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -253,7 +255,7 @@ export default function NewsList() {
         isError={error}
         onRefresh={fetchNews}
         searchPlaceholder="Cari berita..."
-        searchValue={search}
+        searchValue={filters.search || ''}
         onSearch={handleSearch}
         emptyMessage="Belum ada berita."
         keyExtractor={(item) => item.uuid}

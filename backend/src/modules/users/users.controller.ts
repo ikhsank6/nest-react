@@ -22,6 +22,7 @@ export class UsersController {
       query.page,
       query.limit,
       query.search,
+      query.is_active,
     );
   }
 

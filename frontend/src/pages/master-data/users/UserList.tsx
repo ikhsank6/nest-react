@@ -31,16 +31,16 @@ export default function UserList() {
     data: users,
     loading,
     error,
-    search,
+    filters,
     page,
     limit,
     totalPages,
     totalItems,
     setPage,
     setLimit,
-    setSearch,
+    setFilters,
     refresh: fetchUsers,
-  } = useTable<User>('users', useCallback((p, l, s) => userService.getAll(p, l, s), []));
+  } = useTable<User>('users', useCallback((p, l, f) => userService.getAll(p, l, f), []));
   
   // Roles state remains local as it's not part of the table store
   const [roles, setRoles] = useState<Role[]>([]);
@@ -72,7 +72,15 @@ export default function UserList() {
   }, []);
 
   const handleSearch = (val: string) => {
-    setSearch(val);
+    setFilters({ search: val || undefined });
+  };
+
+  const handleStatusFilter = (status: string) => {
+    if (status === 'all') {
+      setFilters({ isActive: undefined });
+    } else {
+      setFilters({ isActive: status === 'active' });
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -88,7 +96,7 @@ export default function UserList() {
     fetchRoles();
   };
 
-  const fetchRoles = async () => {
+  const fetchRoles = withRequestGuard(async () => {
     try {
       const response = await roleService.getAll();
       // Extract the data array from the paginated response
@@ -96,7 +104,7 @@ export default function UserList() {
     } catch (error) {
       console.error('Failed to fetch roles:', error);
     }
-  };
+  });
 
   const openCreateDrawer = () => {
     form.reset({
@@ -289,8 +297,17 @@ export default function UserList() {
         isError={error}
         onRefresh={handleRefresh}
         searchPlaceholder="Search..."
-        searchValue={search}
+        searchValue={filters.search || ''}
         onSearch={handleSearch}
+        statusFilter={{
+          value: filters.isActive === undefined ? 'all' : filters.isActive ? 'active' : 'inactive',
+          onChange: handleStatusFilter,
+          options: [
+            { value: 'all', label: 'Semua Status' },
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+          ],
+        }}
         emptyMessage="No users found."
         keyExtractor={(user) => user.uuid}
         currentPage={page}

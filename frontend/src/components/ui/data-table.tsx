@@ -76,6 +76,14 @@ export interface TableActions<T> {
   }>
 }
 
+// Status filter configuration
+export interface StatusFilterConfig {
+  value: string
+  onChange: (value: string) => void
+  options: Array<{ value: string; label: string }>
+  placeholder?: string
+}
+
 interface DataTableProps<T> {
   // Header section
   title?: string
@@ -86,10 +94,11 @@ interface DataTableProps<T> {
   columns: Column<T>[]
   actions?: TableActions<T>
   loading?: boolean
-  // Search
+  // Search & Filters
   searchPlaceholder?: string
   onSearch?: (value: string) => void
   searchValue?: string
+  statusFilter?: StatusFilterConfig
   onRefresh?: () => void
   // Messages
   emptyMessage?: string
@@ -203,6 +212,7 @@ export function DataTable<T>({
   searchPlaceholder = "Search...",
   onSearch,
   searchValue = "",
+  statusFilter,
   onRefresh,
   emptyMessage = "No data found.",
   loadingMessage = "Loading...",
@@ -285,27 +295,56 @@ export function DataTable<T>({
 
       {/* Search Bar and Controls */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b px-6 py-4">
-        {onSearch && (
-          <div className="relative w-full sm:flex-1 sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={(e) => onSearch(e.target.value)}
-              className="pl-9 pr-9 bg-background/50 focus-visible:ring-1"
-            />
-            {searchValue && (
-              <Button
-                variant="ghost" 
-                size="icon"
-                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => onSearch("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-3 w-full sm:flex-1">
+          {onSearch && (
+            <div className="relative flex-1 sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder={searchPlaceholder}
+                value={searchValue}
+                onChange={(e) => onSearch(e.target.value)}
+                className="pl-9 pr-9 bg-background/50 focus-visible:ring-1"
+              />
+              {searchValue && (
+                <Button
+                  variant="ghost" 
+                  size="icon"
+                  className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => onSearch("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {/* Status Filter */}
+          {statusFilter && (
+            <Select 
+              value={statusFilter.value} 
+              onValueChange={statusFilter.onChange}
+            >
+              <SelectTrigger className="h-9 w-[140px] bg-background/50">
+                <SelectValue placeholder={statusFilter.placeholder || "Status"} />
+              </SelectTrigger>
+              <SelectContent>
+                {statusFilter.options.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center gap-2">
+                      {option.value === 'active' && (
+                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                      )}
+                      {option.value === 'inactive' && (
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                      )}
+                      {option.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
         
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
           {/* View Toggle */}

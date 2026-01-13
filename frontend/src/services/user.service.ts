@@ -1,4 +1,6 @@
 import api from '@/config/axios';
+import { createQueryParams } from '@/lib/utils';
+import type { TableFilters } from '@/stores/table.store';
 
 export interface User {
   uuid: string;
@@ -51,10 +53,16 @@ export interface PaginatedResponse<T> {
 }
 
 export const userService = {
-  getAll: async (page = 1, limit = 10, search?: string): Promise<PaginatedResponse<User>> => {
-    let url = `/master-data/users?page=${page}&limit=${limit}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    const response = await api.get(url) as any;
+  getAll: async (page = 1, limit = 10, filters: TableFilters = {}): Promise<PaginatedResponse<User>> => {
+    // Build query params with filters spread, mapping isActive to is_active for backend
+    const { isActive, ...restFilters } = filters;
+    const query = createQueryParams({
+      page,
+      limit,
+      ...restFilters,
+      ...(isActive !== undefined && { is_active: isActive }),
+    });
+    const response = await api.get(`/master-data/users?${query}`) as any;
     return response;
   },
 
