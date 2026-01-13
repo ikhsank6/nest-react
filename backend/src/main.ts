@@ -4,6 +4,7 @@ import { ValidationPipe } from './common/pipes/validation.pipe';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggerService } from './logger/logger.service';
+import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
@@ -17,6 +18,7 @@ async function bootstrap() {
   app.set('etag', false);
 
   const logger = app.get(LoggerService);
+  const configService = app.get(ConfigService);
 
   // Enable CORS
   app.enableCors({
@@ -49,7 +51,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   // Global filters
-  app.useGlobalFilters(new HttpExceptionFilter(logger));
+  app.useGlobalFilters(new HttpExceptionFilter(logger, configService));
 
   // Swagger hanya untuk development dan staging
   const allowedEnvs = ['development', 'staging', 'local'];

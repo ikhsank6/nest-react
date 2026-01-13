@@ -1,4 +1,5 @@
 import api from '@/config/axios';
+import { env } from '@/config/env';
 import { cookieUtils } from '@/lib/cookies';
 import { useAuthStore, type AuthUser, type AuthMenu } from '@/stores/auth.store';
 
@@ -16,20 +17,32 @@ export interface RegisterData {
 
 export interface AuthResponse {
   accessToken: string;
+  refreshToken?: string;
   user: AuthUser;
   menus: AuthMenu[];
+}
+
+export interface RefreshResponse {
+  accessToken: string;
+  refreshToken: string;
 }
 
 export const authService = {
   login: async (data: LoginData): Promise<AuthResponse> => {
     const response = await api.post('/auth/login', data) as any;
     const authData = response?.data as AuthResponse;
-    
+
     if (authData?.accessToken) {
-      // Update Zustand store (which syncs with cookies) - include menus
-      useAuthStore.getState().setAuth(authData.user, authData.accessToken, authData.menus || []);
+      // Update Zustand store (which syncs with cookies) - include menus and refresh token
+      // Use frontend env to determine if refresh token is enabled
+      useAuthStore.getState().setAuth(
+        authData.user,
+        authData.accessToken,
+        authData.menus || [],
+        env.REFRESH_TOKEN_ENABLED ? authData.refreshToken : undefined,
+      );
     }
-    
+
     return authData;
   },
 
@@ -64,7 +77,42 @@ export const authService = {
     return user;
   },
 
-  logout: () => {
+  // Refresh access token using refresh token
+  refresh: async (): Promise<RefreshResponse | null> => {
+    const refreshToken = useAuthStore.getState().refreshToken;
+    if (!refreshToken) {
+      return null;
+    }
+
+    try {
+      const response = await api.post('/auth/refresh', { refreshToken }) as any;
+      const data = response?.data as RefreshResponse;
+
+      if (data?.accessToken) {
+        // Update tokens in store
+        useAuthStore.getState().updateTokens(data.accessToken, data.refreshToken);
+      }
+
+      return data;
+    } catch {
+      // If refresh fails, logout
+      authService.logout();
+      return null;
+    }
+  },
+
+  logout: async () => {
+    const refreshToken = useAuthStore.getState().refreshToken;
+
+    // Call logout API to revoke refresh token
+    try {
+      if (refreshToken) {
+        await api.post('/auth/logout', { refreshToken });
+      }
+    } catch {
+      // Ignore errors during logout
+    }
+
     useAuthStore.getState().logout();
     window.location.href = '/login';
   },
@@ -80,5 +128,12 @@ export const authService = {
   getToken: () => {
     return cookieUtils.getToken();
   },
+
+  // Revoke all tokens (logout from all devices)
+  revokeAllTokens: async () => {
+    const response = await api.post('/auth/revoke-all-tokens') as any;
+    return response;
+  },
 };
+
 

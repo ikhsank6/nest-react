@@ -1,4 +1,4 @@
-import axios, { type InternalAxiosRequestConfig, type AxiosResponse, type AxiosInstance } from 'axios';
+import axios, { type InternalAxiosRequestConfig, type AxiosResponse, type AxiosInstance, type AxiosError } from 'axios';
 import { env } from './env';
 import { toast } from 'sonner';
 import { cookieUtils } from '@/lib/cookies';
@@ -16,6 +16,21 @@ const axiosInstance = axios.create(axiosParams);
 
 // Store for tracking ongoing requests
 const ongoingRequests = new Map();
+
+// Flag to prevent multiple refresh requests
+let isRefreshing = false;
+let failedQueue: { resolve: (value: any) => void; reject: (reason?: any) => void }[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -66,21 +81,80 @@ axiosInstance.interceptors.response.use(
     }
     return Promise.reject('Periksa jaringan Anda');
   },
-  async (error) => {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // Check if it's a 401 error and not a retry
+    const isLoginRequest = originalRequest?.url?.includes('/auth/login');
+    const isRefreshRequest = originalRequest?.url?.includes('/auth/refresh');
+
+    // Try to refresh token on 401 (except for login/refresh requests)
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isLoginRequest &&
+      !isRefreshRequest
+    ) {
+      const { refreshToken } = useAuthStore.getState();
+
+      // If refresh token feature is enabled (via frontend env) and token is available
+      if (env.REFRESH_TOKEN_ENABLED && refreshToken) {
+        if (isRefreshing) {
+          // Wait for the ongoing refresh to complete
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then((token) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              return axiosInstance(originalRequest);
+            })
+            .catch((err) => {
+              return Promise.reject(err);
+            });
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          const response = await axios.post(`${env.API_URL}/auth/refresh`, { refreshToken });
+          const data = response.data?.data;
+
+          if (data?.accessToken) {
+            // Update tokens in store
+            useAuthStore.getState().updateTokens(data.accessToken, data.refreshToken);
+
+            // Update authorization header
+            originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+
+            // Process queued requests
+            processQueue(null, data.accessToken);
+
+            // Retry original request
+            return axiosInstance(originalRequest);
+          }
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+          // Refresh failed, logout user
+          useAuthStore.getState().logout();
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        // No refresh token, logout
+        useAuthStore.getState().logout();
+        window.location.href = '/login';
+      }
+    }
+
     // Use centralized error message extraction
     const message = getErrorMessage(error);
 
-    // Only show toast if not on login page with 401 (invalid credentials is expected)
-    const isLoginRequest = error.config?.url?.includes('/auth/login');
-
-    // Show error toast
-    toast.error(message);
-
-    // Handle 401 or 403 - logout and redirect to login
-    // But NOT for login/register requests (401 means wrong credentials, not session expired)
-    if ((error.response?.status === 401 || error.response?.status === 403) && !isLoginRequest) {
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
+    // Show error toast (but not for 401 on login - that's expected for wrong credentials)
+    if (!(error.response?.status === 401 && isLoginRequest)) {
+      toast.error(message);
     }
 
     return Promise.reject(error);

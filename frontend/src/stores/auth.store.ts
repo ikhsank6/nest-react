@@ -33,15 +33,17 @@ interface AuthState {
   // State
   user: AuthUser | null;
   token: string | null;
+  refreshToken: string | null;
   menus: AuthMenu[];
   isAuthenticated: boolean;
   isLoading: boolean;
 
   // Actions
-  setAuth: (user: AuthUser, token: string, menus?: AuthMenu[]) => void;
+  setAuth: (user: AuthUser, token: string, menus?: AuthMenu[], refreshToken?: string) => void;
   setUser: (user: AuthUser) => void;
   setMenus: (menus: AuthMenu[]) => void;
   setLoading: (loading: boolean) => void;
+  updateTokens: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
   hydrate: () => void;
   hasMenuAccess: (path: string) => boolean;
@@ -54,8 +56,9 @@ const cookieStorage = {
     const user = cookieUtils.getUser<AuthUser>();
     const menusStr = localStorage.getItem('auth-menus');
     const menus = menusStr ? JSON.parse(menusStr) : [];
+    const refreshToken = localStorage.getItem('auth-refresh-token');
     if (token && user) {
-      return JSON.stringify({ state: { user, token, menus, isAuthenticated: true } });
+      return JSON.stringify({ state: { user, token, menus, refreshToken, isAuthenticated: true } });
     }
     return null;
   },
@@ -71,6 +74,9 @@ const cookieStorage = {
       if (parsed.state?.menus) {
         localStorage.setItem('auth-menus', JSON.stringify(parsed.state.menus));
       }
+      if (parsed.state?.refreshToken) {
+        localStorage.setItem('auth-refresh-token', parsed.state.refreshToken);
+      }
     } catch {
       // Ignore parse errors
     }
@@ -78,6 +84,7 @@ const cookieStorage = {
   removeItem: (_name: string) => {
     cookieUtils.clearAuth();
     localStorage.removeItem('auth-menus');
+    localStorage.removeItem('auth-refresh-token');
   },
 };
 
@@ -87,16 +94,27 @@ export const useAuthStore = create<AuthState>()(
       // Initial state
       user: null,
       token: null,
+      refreshToken: null,
       menus: [],
       isAuthenticated: false,
       isLoading: true,
 
-      // Set auth (user + token + menus)
-      setAuth: (user, token, menus = []) => {
+      // Set auth (user + token + menus + refreshToken)
+      setAuth: (user, token, menus = [], refreshToken) => {
         cookieUtils.setToken(token);
         cookieUtils.setUser(user);
         localStorage.setItem('auth-menus', JSON.stringify(menus));
-        set({ user, token, menus, isAuthenticated: true, isLoading: false });
+        if (refreshToken) {
+          localStorage.setItem('auth-refresh-token', refreshToken);
+        }
+        set({
+          user,
+          token,
+          menus,
+          refreshToken: refreshToken || null,
+          isAuthenticated: true,
+          isLoading: false
+        });
       },
 
       // Update user only
@@ -111,6 +129,13 @@ export const useAuthStore = create<AuthState>()(
         set({ menus });
       },
 
+      // Update tokens (for refresh)
+      updateTokens: (accessToken, refreshToken) => {
+        cookieUtils.setToken(accessToken);
+        localStorage.setItem('auth-refresh-token', refreshToken);
+        set({ token: accessToken, refreshToken });
+      },
+
       // Set loading state
       setLoading: (loading) => set({ isLoading: loading }),
 
@@ -118,7 +143,15 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         cookieUtils.clearAuth();
         localStorage.removeItem('auth-menus');
-        set({ user: null, token: null, menus: [], isAuthenticated: false, isLoading: false });
+        localStorage.removeItem('auth-refresh-token');
+        set({
+          user: null,
+          token: null,
+          refreshToken: null,
+          menus: [],
+          isAuthenticated: false,
+          isLoading: false
+        });
       },
 
       // Hydrate from cookies
@@ -127,8 +160,16 @@ export const useAuthStore = create<AuthState>()(
         const user = cookieUtils.getUser<AuthUser>();
         const menusStr = localStorage.getItem('auth-menus');
         const menus = menusStr ? JSON.parse(menusStr) : [];
+        const refreshToken = localStorage.getItem('auth-refresh-token');
         if (token && user) {
-          set({ user, token, menus, isAuthenticated: true, isLoading: false });
+          set({
+            user,
+            token,
+            menus,
+            refreshToken,
+            isAuthenticated: true,
+            isLoading: false
+          });
         } else {
           set({ isLoading: false });
         }
@@ -172,7 +213,14 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => cookieStorage),
-      partialize: (state) => ({ user: state.user, token: state.token, menus: state.menus }),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        menus: state.menus,
+        refreshToken: state.refreshToken,
+      }),
     }
   )
 );
+
+

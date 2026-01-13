@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, ForgotPasswordDto, ResendVerificationDto, ResetPasswordDto } from './dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResendVerificationDto, ResetPasswordDto, RefreshTokenDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { LoginThrottlerGuard } from '../../common/guards/login-throttler.guard';
 import { AuthThrottlerGuard } from '../../common/guards/auth-throttler.guard';
@@ -25,6 +25,8 @@ export class AuthController {
         message: 'Login berhasil',
         data: {
           accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          refreshToken: 'a1b2c3d4e5f6...',
+          refreshTokenEnabled: true,
           user: {
             id: 1,
             email: 'admin@example.com',
@@ -39,6 +41,36 @@ export class AuthController {
   @ApiResponse({ status: 429, description: 'Too many login attempts. Please try again later.' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Refresh access token', description: 'Get a new access token using refresh token. Only works if REFRESH_TOKEN_ENABLED=true.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Token refreshed successfully',
+    schema: {
+      example: {
+        message: 'Token refreshed successfully',
+        data: {
+          accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          refreshToken: 'new_refresh_token...'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Refresh token is disabled' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.refreshAccessToken(refreshTokenDto.refreshToken);
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Logout', description: 'Logout user and revoke refresh token (if provided).' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  async logout(@Body() body: { refreshToken?: string }) {
+    return this.authService.logout(body.refreshToken);
   }
 
   @Post('register')
@@ -97,4 +129,16 @@ export class AuthController {
   async getProfile(@Request() req) {
     return this.authService.getProfile(req.user.sub);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('revoke-all-tokens')
+  @HttpCode(200)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Revoke all refresh tokens', description: 'Revoke all refresh tokens for current user (logout from all devices)' })
+  @ApiResponse({ status: 200, description: 'All tokens revoked' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async revokeAllTokens(@Request() req) {
+    return this.authService.revokeAllTokens(req.user.sub);
+  }
 }
+
