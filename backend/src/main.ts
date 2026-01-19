@@ -22,7 +22,7 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:5173'],
+    origin: ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:5173', 'http://localhost:8888'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'X-Requested-With'],
     credentials: true,
@@ -30,9 +30,9 @@ async function bootstrap() {
     optionsSuccessStatus: 200,
   });
 
-  // Global prefix (exclude static asset paths)
+  // Global prefix (exclude static asset paths and root health check)
   app.setGlobalPrefix('api', {
-    exclude: ['/uploads/(.*)', '/public/(.*)'],
+    exclude: ['/', '/uploads/(.*)', '/public/(.*)'],
   });
 
   // Serve static files (AFTER global prefix to avoid conflicts)

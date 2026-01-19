@@ -17,6 +17,7 @@ import { WebsiteModule } from './modules/website/website.module';
 import { UploadModule } from './upload/upload.module';
 import { MediaModule } from './media/media.module';
 import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { RequestContextInterceptor } from './common/interceptors/request-context
     UploadModule,
     MediaModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_INTERCEPTOR,
