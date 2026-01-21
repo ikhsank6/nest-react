@@ -5,6 +5,8 @@ import 'core/router/app_router.dart';
 import 'core/api/api_client.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/profile/data/repositories/profile_repository.dart';
+import 'features/profile/presentation/bloc/profile_bloc.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,20 +28,56 @@ class MyApp extends StatelessWidget {
             apiClient: context.read<ApiClient>(),
           ),
         ),
-      ],
-      child: BlocProvider(
-        create: (context) => AuthBloc(
-          authRepository: context.read<AuthRepository>(),
-        )..add(AuthCheckStatus()),
-        child: MaterialApp.router(
-          title: 'Nest React Mobile',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
-          routerConfig: AppRouter.router,
+        RepositoryProvider(
+          create: (context) => ProfileRepository(
+            apiClient: context.read<ApiClient>(),
+          ),
         ),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => AuthBloc(
+              authRepository: context.read<AuthRepository>(),
+            )..add(AuthCheckStatus()),
+          ),
+          BlocProvider(
+            create: (context) => ProfileBloc(
+              profileRepository: context.read<ProfileRepository>(),
+            ),
+          ),
+        ],
+        child: const AppRouterRoot(),
       ),
+    );
+  }
+}
+
+class AppRouterRoot extends StatefulWidget {
+  const AppRouterRoot({super.key});
+
+  @override
+  State<AppRouterRoot> createState() => _AppRouterRootState();
+}
+
+class _AppRouterRootState extends State<AppRouterRoot> {
+  late final AppRouter _appRouter;
+
+  @override
+  void initState() {
+    super.initState();
+    _appRouter = AppRouter(context.read<AuthBloc>());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Nest React Mobile',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      routerConfig: _appRouter.router,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../bloc/auth_bloc.dart';
 
 class SplashPage extends StatefulWidget {
@@ -10,23 +11,44 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> {
+class _SplashPageState extends State<SplashPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
+
+    _controller.forward();
     _checkAuth();
   }
 
-  Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      final authState = context.read<AuthBloc>().state;
-      if (authState is AuthAuthenticated) {
-        context.go('/home');
-      } else {
-        context.go('/login');
+  void _checkAuth() {
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        context.read<AuthBloc>().add(AuthCheckStatus());
       }
-    }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -41,38 +63,109 @@ class _SplashPageState extends State<SplashPage> {
       },
       child: Scaffold(
         body: Container(
-          decoration: BoxDecoration(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.secondary,
+                Color(0xFF7C3AED),
+                Color(0xFF6D28D9),
+                Color(0xFF5B21B6),
               ],
             ),
           ),
-          child: const Center(
+          child: SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.rocket_launch_rounded,
-                  size: 80,
-                  color: Colors.white,
-                ),
-                SizedBox(height: 24),
-                Text(
-                  'Nest React Mobile',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                const Spacer(flex: 2),
+
+                // Animated Logo
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(35),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 30,
+                            offset: const Offset(0, 15),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.rocket_launch_rounded,
+                        size: 70,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
                   ),
                 ),
-                SizedBox(height: 40),
-                CircularProgressIndicator(
-                  color: Colors.white,
+                const SizedBox(height: 40),
+
+                // App Name
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Task Manager',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Manage your tasks efficiently',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+
+                const Spacer(flex: 2),
+
+                // Loading indicator
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Loading...',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 60),
               ],
             ),
           ),
