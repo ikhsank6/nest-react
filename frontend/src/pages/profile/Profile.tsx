@@ -152,23 +152,32 @@ export default function Profile() {
   const [avatarBlobUrl, setAvatarBlobUrl] = useState<string | undefined>(undefined);
   
   // Fetch avatar with auth token using profileService
+  const fetchAvatarCallback = useCallback(async () => {
+    if (!user?.avatar || !user?.uuid) {
+      setAvatarBlobUrl(undefined);
+      return null;
+    }
+
+    const blob = await profileService.getAvatarBlob(user.uuid);
+    return blob;
+  }, [user?.avatar, user?.uuid]);
+
   useEffect(() => {
     let isMounted = true;
     let currentBlobUrl: string | null = null;
     
-    const fetchAvatar = withRequestGuard(useCallback(async () => {
-      if (!user?.avatar || !user?.uuid) {
-        setAvatarBlobUrl(undefined);
-        return;
+    const fetchAvatar = async () => {
+      try {
+        const blob = await fetchAvatarCallback();
+        if (isMounted && blob && blob instanceof Blob) {
+          const blobUrl = URL.createObjectURL(blob);
+          currentBlobUrl = blobUrl;
+          setAvatarBlobUrl(blobUrl);
+        }
+      } catch {
+        // Ignore errors
       }
-
-      const blob = await profileService.getAvatarBlob(user.uuid);
-      if (isMounted && blob && blob instanceof Blob) {
-        const blobUrl = URL.createObjectURL(blob);
-        currentBlobUrl = blobUrl;
-        setAvatarBlobUrl(blobUrl);
-      }
-    }, [user?.avatar, user?.uuid]));
+    };
 
     fetchAvatar();
 
@@ -179,7 +188,7 @@ export default function Profile() {
         URL.revokeObjectURL(currentBlobUrl);
       }
     };
-  }, [user?.avatar, user?.uuid]);
+  }, [fetchAvatarCallback]);
 
   return (
     <div className="w-full">

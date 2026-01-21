@@ -57,6 +57,7 @@ export const profileService = {
       const response = await api.get(`profile/avatar/${uuid}`, {
         responseType: 'blob',
         timeout: 0,
+        useAbort: false, // Prevent cancellation on re-render
       });
       return (response as any).data;
     } catch (error) {
