@@ -64,6 +64,12 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Helper component to redirect while preserving query parameters
+function RedirectWithQuery({ to }: { to: string }) {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}`} replace />;
+}
+
 export default function App() {
   const hydrate = useAuthStore((state) => state.hydrate);
 
@@ -109,11 +115,11 @@ export default function App() {
             <Route path="reset-password" element={<ResetPassword />} />
           </Route>
           
-          {/* Legacy routes - redirect to new auth routes */}
-          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/register" element={<Navigate to="/auth/register" replace />} />
-          <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
-          <Route path="/reset-password" element={<Navigate to="/auth/reset-password" replace />} />
+          {/* Legacy routes - redirect to new auth routes (preserving query params) */}
+          <Route path="/login" element={<RedirectWithQuery to="/auth/login" />} />
+          <Route path="/register" element={<RedirectWithQuery to="/auth/register" />} />
+          <Route path="/forgot-password" element={<RedirectWithQuery to="/auth/forgot-password" />} />
+          <Route path="/reset-password" element={<RedirectWithQuery to="/auth/reset-password" />} />
 
           {/* Verify email - standalone route (no redirect if authenticated) */}
           <Route path="/verify-email" element={<VerifyEmail />} />
